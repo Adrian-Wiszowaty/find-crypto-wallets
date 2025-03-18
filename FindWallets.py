@@ -8,29 +8,35 @@ import logging
 from datetime import datetime, timezone
 from dateutil import parser as date_parser
 
+
+T1_STR = "Mar-18-2025 06:30:00 AM UTC"
+T2_STR = "Mar-18-2025 07:45:0 AM UTC"
+T3_STR = "Mar-18-2025 08:10:00 AM UTC"
+
+TOKEN_CONTRACT_ADDRESS = "0x4B2099aB95249DC45E269C90e27B522E05F3D28C"
+
 API_KEY = os.getenv("BSCSCAN_API_KEY", "")
 API_URL_BASE = "https://api.bscscan.com/api"
 
-TOKEN_CONTRACT_ADDRESS = "0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6"
-TOKEN_NAME = "MyToken"
-
-T1_STR = "Mar-13-2025 10:00:00 AM UTC"
-T2_STR = "Mar-15-2025 12:59:52 AM UTC"
-T3_STR = "Mar-17-2025 05:20:19 PM UTC"
-
 BLOCK_CHUNK_SIZE = 1200
 
-FREQUENCY_INTERVAL_SECONDS = 180
-MIN_FREQ_VIOLATIONS = 2
+FREQUENCY_INTERVAL_SECONDS = 60
+MIN_FREQ_VIOLATIONS = 5
 
 DELAY_BETWEEN_REQUESTS = 0.2
 MAX_RETRIES = 3
 
-CACHE_FILE = "wallet_frequency_cache.json"
+WALLETS_FOLDER = "Wallets"
+LOGS_FOLDER = "Logs"
 
-LOG_FILE = "error_log.txt"
+CACHE_FILE = os.path.join(WALLETS_FOLDER, "wallet_frequency_cache.json")
+
+LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
 
 MIN_BNB_VALUE = 0.1
+
+os.makedirs(WALLETS_FOLDER, exist_ok=True)
+os.makedirs(LOGS_FOLDER, exist_ok=True)
 
 def divide_blocks_into_chunks(start_block, end_block, chunk_size):
     chunks = []
@@ -41,9 +47,11 @@ def divide_blocks_into_chunks(start_block, end_block, chunk_size):
         current_start = current_end + 1
     return chunks
 
-logging.basicConfig(filename=LOG_FILE,
-                    level=logging.ERROR,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 
 def parse_date(date_str):
@@ -65,11 +73,12 @@ def api_request(params):
             response = requests.get(API_URL_BASE, params=params, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                if data.get("status") == "1" or data.get("message") == "OK":
+                if data.get("status") == "1" and "result" in data:
                     return data
+                elif data.get("message") == "No transactions found":
+                    return {"result": []}
                 else:
                     logging.error(f"API error: {data}")
-                    return data
             else:
                 logging.error(f"HTTP error {response.status_code}: {response.text}")
         except Exception as e:
@@ -110,14 +119,19 @@ def get_token_transactions(startblock, endblock):
             "apikey": API_KEY
         }
         print(f"Pobieram transakcje dla bloków {current_start} - {current_end}...")
-        data = api_request(params)
-        if "result" in data and isinstance(data["result"], list):
-            txs = data["result"]
-            all_txs.extend(txs)
-        else:
-            logging.error(f"Invalid API response format for blocks {current_start}-{current_end}: {data}")
-        time.sleep(DELAY_BETWEEN_REQUESTS)
-        current_start = current_end + 1
+        try:
+            data = api_request(params)
+            if "result" in data and isinstance(data["result"], list):
+                txs = data["result"]
+                print(f"Liczba transakcji w odpowiedzi: {len(txs)}")
+                all_txs.extend(txs)
+            else:
+                logging.error(f"Invalid API response format for blocks {current_start}-{current_end}: {data}")
+        except Exception as e:
+            logging.error(f"Error processing data for blocks {current_start}-{current_end}: {e}")
+        finally:
+            current_start = current_end + 1
+            time.sleep(DELAY_BETWEEN_REQUESTS)
     return all_txs
 
 
@@ -184,12 +198,12 @@ def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
 
 
 def get_output_filename():
-    base_name = f"{TOKEN_NAME}.csv"
+    base_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}.csv")
     if not os.path.exists(base_name):
         return base_name
     suffix = 1
     while True:
-        new_name = f"{TOKEN_NAME}_{suffix}.csv"
+        new_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}_{suffix}.csv")
         if not os.path.exists(new_name):
             return new_name
         suffix += 1
@@ -286,7 +300,6 @@ def main():
 
         header_lines = [
             f"TOKEN_CONTRACT_ADDRESS: {TOKEN_CONTRACT_ADDRESS}",
-            f"TOKEN_NAME: {TOKEN_NAME}",
             f"T1: {T1_STR}",
             f"T2: {T2_STR}",
             f"T3: {T3_STR}",
