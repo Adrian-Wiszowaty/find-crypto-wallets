@@ -1,0 +1,20 @@
+key,value,description
+T1_STR,Mar-18-2025 06:00:00 UTC,Czas rozpoczęcia analizy
+T2_STR,Mar-18-2025 11:00:00 UTC,Czas zakończenia okresu zakupów
+T3_STR,Mar-18-2025 21:00:00 UTC,Czas zakończenia analizy
+TOKEN_CONTRACT_ADDRESS,0xC52AA2014d70f90EDaC790F49de088A3A65C2992,Adres kontraktu tokena
+API_KEY,A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ,Klucz API do BscScan
+API_URL_BSC,https://api.bscscan.com/api,Podstawowy URL API BscScan
+BLOCK_CHUNK_SIZE,1200,Liczba bloków na jedno zapytanie API
+FREQUENCY_INTERVAL_SECONDS,60,Interwał czasowy w sekundach do sprawdzania częstotliwości
+MIN_FREQ_VIOLATIONS,5,Minimalna liczba naruszeń częstotliwości
+MIN_TX_COUNT,10,Minimalna liczba transakcji do analizy portfela
+DELAY_BETWEEN_REQUESTS,0.2,Opóźnienie między zapytaniami API w sekundach
+MAX_RETRIES,3,Maksymalna liczba prób zapytań API
+WALLETS_FOLDER,Wallets,Katalog do przechowywania danych portfeli
+LOGS_FOLDER,Logs,Katalog do przechowywania logów
+CACHE_FILE,wallet_frequency_cache.json,Plik cache częstotliwości portfeli
+DEX_API_URL,https://api.dexscreener.com/latest/dex/tokens/{},URL API DexScreener
+WBNB_ADDRESS,0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c,Adres tokena WBNB
+NATIVE_TOKEN_NAME,BNB,Nazwa natywnego tokena
+LOG_FILE,error_log.txt,Nazwa pliku logów
