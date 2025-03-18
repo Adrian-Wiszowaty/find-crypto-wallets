@@ -30,8 +30,6 @@ LOGS_FOLDER = "Logs"
 
 CACHE_FILE = os.path.join(WALLETS_FOLDER, "wallet_frequency_cache.json")
 
-MIN_BNB_VALUE = 0.1
-
 DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
 WBNB_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
 NATIVE_TOKEN_NAME = "BNB"
