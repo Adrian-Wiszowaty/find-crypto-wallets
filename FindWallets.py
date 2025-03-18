@@ -4,13 +4,13 @@ import time
 import os
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta  # Dodaj import timedelta
 from dateutil import parser as date_parser  # pomocnicza biblioteka do parsowania dat
 
 # ================================ KONSTANTY ================================
 T1_STR = "Mar-18-2025 06:00:00 AM UTC"
 T2_STR = "Mar-18-2025 11:00:00 AM UTC"
-T3_STR = "Mar-18-2025 02:47:00 PM UTC"
+T3_STR = "Mar-18-2025 05:10:00 PM UTC"
 
 TOKEN_CONTRACT_ADDRESS = "0xC52AA2014d70f90EDaC790F49de088A3A65C2992"
 
@@ -80,6 +80,7 @@ def parse_date(date_str):
             dt = dt.replace(tzinfo=timezone.utc)
         else:
             dt = dt.astimezone(timezone.utc)
+        dt -= timedelta(hours=1)  # Odejmij 1 godzinę
         return int(dt.timestamp())
     except Exception as e:
         # Próba naprawy formatu: usunięcie "AM/PM" gdy godzina jest w 24h
@@ -102,6 +103,7 @@ def parse_date(date_str):
                         dt = dt.replace(tzinfo=timezone.utc)
                     else:
                         dt = dt.astimezone(timezone.utc)
+                    dt -= timedelta(hours=1)  # Odejmij 1 godzinę
                     return int(dt.timestamp())
                 except Exception as e2:
                     logging.error(f"Nie udało się naprawić formatu daty: {date_str} - {e2}")
