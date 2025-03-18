@@ -7,12 +7,11 @@ import logging
 from datetime import datetime, timezone
 from dateutil import parser as date_parser
 
+T1_STR = "Mar-18-2025 06:00:00 AM UTC"
+T2_STR = "Mar-18-2025 11:00:00 AM UTC"
+T3_STR = "Mar-18-2025 02:47:00 PM UTC"
 
-T1_STR = "Mar-13-2025 11:00:00 PM UTC"
-T2_STR = "Mar-15-2025 01:00:00 AM UTC"
-T3_STR = "Mar-16-2025 05:00:00 AM UTC"
-
-TOKEN_CONTRACT_ADDRESS = "0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6"
+TOKEN_CONTRACT_ADDRESS = "0xC52AA2014d70f90EDaC790F49de088A3A65C2992"
 
 API_KEY = os.getenv("BSCSCAN_API_KEY", "")
 API_URL_BASE = "https://api.bscscan.com/api"
@@ -30,9 +29,13 @@ LOGS_FOLDER = "Logs"
 
 CACHE_FILE = os.path.join(WALLETS_FOLDER, "wallet_frequency_cache.json")
 
-LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
-
 MIN_BNB_VALUE = 0.1
+
+DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
+WBNB_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+NATIVE_TOKEN_NAME = "BNB"
+
+LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
 
 os.makedirs(WALLETS_FOLDER, exist_ok=True)
 os.makedirs(LOGS_FOLDER, exist_ok=True)
@@ -61,8 +64,31 @@ def parse_date(date_str):
             dt = dt.astimezone(timezone.utc)
         return int(dt.timestamp())
     except Exception as e:
+        import re
+        pattern = r'(\w+-\d{1,2}-\d{4})\s+(\d{1,2}:\d{2}:\d{2})\s+(AM|PM)\s+(UTC)'
+        match = re.match(pattern, date_str)
+        if match:
+            date_part, time_part, meridiem, tz = match.groups()
+            hour_str = time_part.split(':')[0]
+            try:
+                hour = int(hour_str)
+            except ValueError:
+                logging.error(f"Failed to convert the time from {time_part}")
+                raise e
+            if hour > 12:
+                new_date_str = f"{date_part} {time_part} {tz}"
+                try:
+                    dt = date_parser.parse(new_date_str)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    else:
+                        dt = dt.astimezone(timezone.utc)
+                    return int(dt.timestamp())
+                except Exception as e2:
+                    logging.error(f"Failed to fix the date format: {date_str} - {e2}")
+                    raise e2
         logging.error(f"Date parsing error {date_str}: {e}")
-        raise
+        raise e
 
 def api_request(params):
     for attempt in range(1, MAX_RETRIES + 1):
@@ -144,6 +170,47 @@ def save_frequency_cache(cache):
             json.dump(cache, f)
     except Exception as e:
         logging.error(f"Error saving cache to {CACHE_FILE}: {e}")
+
+def get_exchange_rate(token_address, retries=5):
+    attempt = 0
+    rate = None
+    while attempt < retries:
+        try:
+            url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address.lower()}"
+            print(f"Generated URL for token: {url}")
+            response = requests.get(url, timeout=10)
+            
+            if response.status_code != 200:
+                logging.error(f"Server response for token: {response.status_code}, body: {response.text}")
+                raise Exception(f"HTTP error dla tokena: {response.status_code}")
+            
+            data = response.json()
+            
+            pairs = data.get("pairs", [])
+            for pair in pairs:
+                if WBNB_ADDRESS.lower() in (pair.get("baseToken", {}).get("address", "").lower(),
+                                            pair.get("quoteToken", {}).get("address", "").lower()):
+                    if pair.get("baseToken", {}).get("address", "").lower() == token_address.lower():
+                        rate = float(pair["priceNative"])
+                    elif pair.get("quoteToken", {}).get("address", "").lower() == token_address.lower():
+                        rate = 1 / float(pair["priceNative"])
+                    break
+            
+            if rate is not None:
+                break
+            else:
+                logging.error(f"Nie znaleziono pary z WBNB dla tokena {token_address}")
+                raise Exception("Brak odpowiedniej pary w danych API")
+        
+        except Exception as e:
+            logging.error(f"Attempt {attempt + 1} to fetch the rate failed: {e}")
+            attempt += 1
+            time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
+    
+    if rate is None:
+        rate = "error"
+    
+    return rate
 
 def frequency_check(wallet, wallet_txs, cache):
     if wallet in cache:
@@ -280,7 +347,11 @@ def main():
         
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
         
-        frequency_cache = load_frequency_cache()
+        exchange_rate = get_exchange_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
+        if exchange_rate == "error":
+            print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna dla portfela ustawiona jako 'error'.")
+        else:
+            print(f"Kurs wymiany tokena -> {NATIVE_TOKEN_NAME} na dzień T3: {exchange_rate}")
         
         final_results = []
         for wallet in candidate_wallets:
@@ -291,29 +362,27 @@ def main():
             percentage = (final_balance / purchased) * 100
             if final_balance < 0.5 * purchased:
                 continue
-            if len(txs) >= 10:
-                if not frequency_check(wallet, txs, frequency_cache):
-                    print(f"Portfel {wallet} odrzucony ze względu na zbyt częste transakcje.")
-                    continue
+            
+            if exchange_rate != "error":
+                native_value = final_balance * exchange_rate
+            else:
+                native_value = "error"
+            
             final_results.append({
                 "wallet": wallet,
                 "purchased": purchased,
                 "final_balance": final_balance,
-                "percentage": f"{percentage:.2f}%"
+                "percentage": f"{percentage:.2f}%",
+                "native_value": native_value
             })
         
         print(f"Portfeli po filtracji: {len(final_results)}")
-        save_frequency_cache(frequency_cache)
         
         header_lines = [
             f"TOKEN_CONTRACT_ADDRESS: {TOKEN_CONTRACT_ADDRESS}",
             f"T1: {T1_STR}",
             f"T2: {T2_STR}",
             f"T3: {T3_STR}",
-            f"BLOCK_CHUNK_SIZE: {BLOCK_CHUNK_SIZE}",
-            f"FREQUENCY_INTERVAL_SECONDS: {FREQUENCY_INTERVAL_SECONDS}",
-            f"MIN_FREQ_VIOLATIONS: {MIN_FREQ_VIOLATIONS}",
-            f"MIN_BNB_VALUE: {MIN_BNB_VALUE}"
         ]
         
         output_filename = get_output_filename()
