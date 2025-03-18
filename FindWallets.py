@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import requests
 import time
-import csv
 import os
 import json
 import logging
@@ -10,11 +9,11 @@ from dateutil import parser as date_parser  # pomocnicza biblioteka do parsowani
 
 # ================================ KONSTANTY ================================
 
-T1_STR = "Mar-18-2025 06:30:00 AM UTC"
-T2_STR = "Mar-18-2025 07:45:0 AM UTC"
-T3_STR = "Mar-18-2025 08:10:00 AM UTC"
+T1_STR = "Mar-13-2025 11:00:00 PM UTC"
+T2_STR = "Mar-15-2025 01:00:00 AM UTC"
+T3_STR = "Mar-16-2025 05:00:00 AM UTC"
 
-TOKEN_CONTRACT_ADDRESS = "0x4B2099aB95249DC45E269C90e27B522E05F3D28C"
+TOKEN_CONTRACT_ADDRESS = "0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6"
 
 # Klucz API oraz bazowy URL do bscscan API
 API_KEY = "A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ"
@@ -24,8 +23,8 @@ API_URL_BASE = "https://api.bscscan.com/api"
 BLOCK_CHUNK_SIZE = 1200
 
 # Stałe dotyczące filtracji transakcji
-FREQUENCY_INTERVAL_SECONDS = 60  # 3 minuty
-MIN_FREQ_VIOLATIONS = 5          # jeśli co najmniej 2 odstępy mniejsze niż 3 minuty, portfel odrzucamy
+FREQUENCY_INTERVAL_SECONDS = 60  # 60 sekund
+MIN_FREQ_VIOLATIONS = 5          # jeśli co najmniej 5 odstępów mniejsze niż 60 sekund, portfel odrzucamy
 
 # Stałe dotyczące API (retry i delay)
 DELAY_BETWEEN_REQUESTS = 0.2  # sekund
@@ -45,17 +44,12 @@ LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
 MIN_BNB_VALUE = 0.1
 
 # ================================ UTWORZENIE FOLDERÓW ================================
-# Tworzymy foldery, jeśli nie istnieją
 os.makedirs(WALLETS_FOLDER, exist_ok=True)
 os.makedirs(LOGS_FOLDER, exist_ok=True)
 
 # =============================================================================
 # Funkcja pomocnicza do podziału zakresu bloków na paczki
 def divide_blocks_into_chunks(start_block, end_block, chunk_size):
-    """
-    Dzieli zakres bloków na paczki o określonym rozmiarze.
-    Zwraca listę krotek (start_block, end_block) dla każdej paczki.
-    """
     chunks = []
     current_start = start_block
     while current_start <= end_block:
@@ -72,15 +66,12 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-
 def parse_date(date_str):
     """
-    Konwertuje datę w formacie "Mar-13-2025 10:07:19 PM UTC" do znacznika unixowego.
-    Wykorzystujemy dateutil do elastycznego parsowania.
+    Konwertuje datę w formacie "Mar-18-2025 06:30:00 AM UTC" do znacznika unixowego.
     """
     try:
         dt = date_parser.parse(date_str)
-        # Upewniamy się, że mamy UTC
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         else:
@@ -90,11 +81,10 @@ def parse_date(date_str):
         logging.error(f"Błąd parsowania daty {date_str}: {e}")
         raise
 
-
 def api_request(params):
     """
     Wykonuje zapytanie do API bscscan z podanymi parametrami.
-    Implementuje retry z delay w przypadku błędów i przekroczenia limitu.
+    Implementuje retry z delay w przypadku błędów.
     """
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -104,7 +94,6 @@ def api_request(params):
                 if data.get("status") == "1" and "result" in data:
                     return data
                 elif data.get("message") == "No transactions found":
-                    # Jeśli brak transakcji, zwracamy pustą listę
                     return {"result": []}
                 else:
                     logging.error(f"Błąd API: {data}")
@@ -112,15 +101,12 @@ def api_request(params):
                 logging.error(f"Błąd HTTP {response.status_code}: {response.text}")
         except Exception as e:
             logging.error(f"Wyjątek przy zapytaniu do API: {e}")
-        # Delay przed kolejną próbą
         time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
     raise Exception("Nie udało się uzyskać poprawnej odpowiedzi z API po maksymalnej liczbie prób.")
-
 
 def get_block_by_timestamp(timestamp, closest="before"):
     """
     Pobiera numer bloku na podstawie znacznika czasu.
-    Używa endpointu getblocknobytime.
     """
     params = {
         "module": "block",
@@ -137,8 +123,10 @@ def get_block_by_timestamp(timestamp, closest="before"):
         logging.error(f"Nie udało się pobrać numeru bloku dla timestamp {timestamp}: {e}")
         raise
 
-
 def get_token_transactions(startblock, endblock):
+    """
+    Pobiera transakcje tokena z zakresu bloków startblock-endblock.
+    """
     all_txs = []
     current_start = startblock
     while current_start <= endblock:
@@ -165,9 +153,8 @@ def get_token_transactions(startblock, endblock):
             logging.error(f"Błąd podczas przetwarzania danych dla bloków {current_start}-{current_end}: {e}")
         finally:
             current_start = current_end + 1
-            time.sleep(DELAY_BETWEEN_REQUESTS)  # Przerwa między kolejnymi paczkami
+            time.sleep(DELAY_BETWEEN_REQUESTS)
     return all_txs
-
 
 def load_frequency_cache():
     """
@@ -181,7 +168,6 @@ def load_frequency_cache():
             logging.error(f"Błąd ładowania cache z {CACHE_FILE}: {e}")
     return {}
 
-
 def save_frequency_cache(cache):
     """
     Zapisuje cache weryfikacji częstotliwości do pliku.
@@ -192,27 +178,19 @@ def save_frequency_cache(cache):
     except Exception as e:
         logging.error(f"Błąd zapisu cache do {CACHE_FILE}: {e}")
 
-
 def frequency_check(wallet, wallet_txs, cache):
     """
     Sprawdza, czy portfel nie wykonuje transakcji zbyt często.
-    Używa ostatnich 10 transakcji (jeśli dostępnych).
-    Jeśli portfel ma mniej niż 10 transakcji, pomijamy weryfikację.
-    Jeśli wystąpi co najmniej MIN_FREQ_VIOLATIONS odstępów poniżej FREQUENCY_INTERVAL_SECONDS, portfel jest odrzucany.
-    Wynik zapisywany jest w cache (do pliku).
+    Używamy ostatnich 10 transakcji.
     """
-    # Jeśli wynik już jest w cache, zwracamy go
     if wallet in cache:
         return cache[wallet]
     
-    # Jeśli transakcji jest mniej niż 10, pomijamy weryfikację – uznajemy portfel jako poprawny.
     if len(wallet_txs) < 10:
         cache[wallet] = True
         return True
 
-    # Sortujemy transakcje malejąco względem timestamp
     sorted_txs = sorted(wallet_txs, key=lambda x: int(x["timeStamp"]), reverse=True)
-    # Bierzemy ostatnie 10
     last_10 = sorted_txs[:10]
     
     violations = 0
@@ -225,19 +203,15 @@ def frequency_check(wallet, wallet_txs, cache):
     cache[wallet] = result
     return result
 
-
 def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
     """
     Symuluje saldo tokenów portfela od T1 do T3.
-    Zlicza tylko transakcje z okresu T1-T2 jako "zakup" (używane przy porównywaniu 50%)
-    oraz wszystkie transakcje T1-T3 (dodając przy odbiorze, odejmując przy wysyłce).
-    Zwraca (suma zakupów, saldo końcowe)
+    Zlicza transakcje zakupowe (T1-T2) oraz końcowe saldo (T1-T3).
     """
     purchased = 0.0
     balance = 0.0
     for tx in wallet_txs:
         ts = int(tx["timeStamp"])
-        # Ustalamy wartość tokena - uwzględniamy tokenDecimal
         try:
             token_decimals = int(tx.get("tokenDecimal", "0"))
             amount = float(tx["value"]) / (10 ** token_decimals)
@@ -245,112 +219,129 @@ def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
             logging.error(f"Błąd przeliczania wartości transakcji: {tx} - {e}")
             continue
 
-        # Jeśli transakcja odbyła się w okresie T1-T3, aktualizujemy saldo
         if t1_unix <= ts <= t3_unix:
-            # Jeśli wallet otrzymał token
             if tx["to"].lower() == wallet.lower():
                 balance += amount
-                # Jeśli transakcja jest w okresie T1-T2, uznajemy to jako zakup
                 if t1_unix <= ts <= t2_unix:
                     purchased += amount
-            # Jeśli portfel wysłał token
             elif tx["from"].lower() == wallet.lower():
                 balance -= amount
     return purchased, balance
 
-
 def get_output_filename():
     """
-    Tworzy nazwę pliku wynikowego w folderze Wallets opartą o TOKEN_CONTRACT_ADDRESS.
+    Tworzy nazwę pliku wynikowego Excel w folderze Wallets.
     Jeśli plik już istnieje, dodaje suffix _1, _2, itd.
     """
-    base_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}.csv")
+    base_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}.xlsx")
     if not os.path.exists(base_name):
         return base_name
     suffix = 1
     while True:
-        new_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}_{suffix}.csv")
+        new_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}_{suffix}.xlsx")
         if not os.path.exists(new_name):
             return new_name
         suffix += 1
 
-
-def write_csv(filename, header_lines, rows):
+def write_excel(filename, header_lines, rows):
     """
-    Zapisuje wyniki do pliku CSV.
-    header_lines: lista wierszy (jako listy lub stringów) zawierających stałe i metadane.
-    rows: lista słowników z wynikami.
+    Zapisuje wyniki do pliku Excel (.xlsx) z formatowaniem.
+    Metadane umieszczone są na początku, a tabela danych ma pogrubione nagłówki
+    i automatycznie dostosowane szerokości kolumn.
     """
-    try:
-        with open(filename, mode="w", newline="") as csvfile:
-            writer = csv.writer(csvfile)
-            # Zapisujemy nagłówek (każdy wiersz jako osobny)
-            for header in header_lines:
-                if isinstance(header, list):
-                    writer.writerow(header)
-                else:
-                    writer.writerow([header])
-            # Pusta linia rozdzielająca nagłówek od danych
-            writer.writerow([])
-            # Zapisujemy dane – zakładamy, że wszystkie słowniki mają te same klucze
-            if rows:
-                fieldnames = list(rows[0].keys())
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                for row in rows:
-                    writer.writerow(row)
-    except Exception as e:
-        logging.error(f"Błąd zapisu pliku CSV {filename}: {e}")
-        raise
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
 
+    wb = Workbook()
+    ws = wb.active
+    current_row = 1
+    
+    # Zapis metadanych – każda linia z informacjami
+    for header in header_lines:
+        cell = ws.cell(row=current_row, column=1, value=header)
+        cell.font = Font(italic=True, color="808080")
+        current_row += 1
+    
+    current_row += 1  # pusta linia
+    
+    if rows:
+        fieldnames = list(rows[0].keys())
+        # Zapis nagłówka kolumn – pogrubione i zapisane dużymi literami
+        for col, name in enumerate(fieldnames, start=1):
+            cell = ws.cell(row=current_row, column=col, value=name.upper())
+            cell.font = Font(bold=True)
+        current_row += 1
+        
+        # Zapis danych
+        for row in rows:
+            for col, key in enumerate(fieldnames, start=1):
+                value = row.get(key, "")
+                if key in ["purchased", "final_balance"]:
+                    try:
+                        value = float(value)
+                    except:
+                        pass
+                ws.cell(row=current_row, column=col, value=value)
+            current_row += 1
+        
+        # Automatyczne dopasowanie szerokości kolumn
+        for col in ws.columns:
+            max_length = 0
+            col_letter = col[0].column_letter
+            for cell in col:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            ws.column_dimensions[col_letter].width = max_length + 2
+    else:
+        ws.cell(row=current_row, column=1, value="Brak danych")
+    
+    wb.save(filename)
 
 def main():
     try:
         print("Rozpoczynam działanie skryptu...")
-
         # Konwersja dat do znaczników unixowych
         t1_unix = parse_date(T1_STR)
         t2_unix = parse_date(T2_STR)
         t3_unix = parse_date(T3_STR)
         print(f"T1: {t1_unix}, T2: {t2_unix}, T3: {t3_unix}")
-
+        
         # Pobieramy numery bloków dla T1, T2 oraz T3
         start_block = get_block_by_timestamp(t1_unix, closest="after")
         end_block = get_block_by_timestamp(t3_unix, closest="before")
         print(f"Zakres bloków: {start_block} - {end_block}")
-
-        # Pobieramy wszystkie transakcje tokena z zakresu T1 - T3
+        
+        # Pobieramy wszystkie transakcje tokena z zakresu T1-T3
         all_transactions = get_token_transactions(start_block, end_block)
         print(f"Pobrano łącznie {len(all_transactions)} transakcji tokena.")
-
-        # Filtrujemy transakcje, aby uwzględnić tylko te z okresu T1-T3
+        
+        # Filtrowanie transakcji tylko dla okresu T1-T3
         txs_in_period = [tx for tx in all_transactions if t1_unix <= int(tx["timeStamp"]) <= t3_unix]
         print(f"Transakcje w okresie T1-T3: {len(txs_in_period)}")
-
-        # Budujemy słownik portfeli, które dokonały zakupu (otrzymania tokena) w T1-T2
+        
+        # Budujemy słownik kandydatów – portfeli, które dokonały zakupu (T1-T2)
         candidate_wallets = {}
         wallet_transactions = {}
-
         for tx in txs_in_period:
             wallet_from = tx["from"].lower()
             wallet_to = tx["to"].lower()
             tx_timestamp = int(tx["timeStamp"])
-
+            
             if wallet_from not in wallet_transactions:
                 wallet_transactions[wallet_from] = []
             if wallet_to not in wallet_transactions:
                 wallet_transactions[wallet_to] = []
             wallet_transactions[wallet_from].append(tx)
             wallet_transactions[wallet_to].append(tx)
-
+            
             if t1_unix <= tx_timestamp <= t2_unix:
                 candidate_wallets[wallet_to] = True
-
+        
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
-
+        
         # Ładujemy cache dla weryfikacji częstotliwości
         frequency_cache = load_frequency_cache()
-
+        
         final_results = []
         for wallet in candidate_wallets:
             txs = wallet_transactions.get(wallet, [])
@@ -358,26 +349,22 @@ def main():
             if purchased == 0:
                 continue
             percentage = (final_balance / purchased) * 100
-
             if final_balance < 0.5 * purchased:
                 continue
-
             if len(txs) >= 10:
                 if not frequency_check(wallet, txs, frequency_cache):
                     print(f"Portfel {wallet} odrzucony ze względu na zbyt częste transakcje.")
                     continue
-
             final_results.append({
                 "wallet": wallet,
                 "purchased": purchased,
                 "final_balance": final_balance,
                 "percentage": f"{percentage:.2f}%"
             })
-
+        
         print(f"Portfeli po filtracji: {len(final_results)}")
-
         save_frequency_cache(frequency_cache)
-
+        
         header_lines = [
             f"TOKEN_CONTRACT_ADDRESS: {TOKEN_CONTRACT_ADDRESS}",
             f"T1: {T1_STR}",
@@ -388,15 +375,13 @@ def main():
             f"MIN_FREQ_VIOLATIONS: {MIN_FREQ_VIOLATIONS}",
             f"MIN_BNB_VALUE: {MIN_BNB_VALUE}"
         ]
-
+        
         output_filename = get_output_filename()
-        write_csv(output_filename, header_lines, final_results)
+        write_excel(output_filename, header_lines, final_results)
         print(f"Wyniki zapisane do pliku: {output_filename}")
-
     except Exception as e:
         logging.error(f"Błąd głównej funkcji: {e}")
         print("Wystąpił krytyczny błąd. Sprawdź logi w pliku:", LOG_FILE)
-
 
 if __name__ == "__main__":
     main()
