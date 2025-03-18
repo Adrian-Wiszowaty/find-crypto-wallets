@@ -6,35 +6,69 @@ import json
 import logging
 from datetime import datetime, timezone, timedelta
 from dateutil import parser as date_parser
+import csv
 
-T1_STR = "Mar-18-2025 06:00:00 AM UTC"
-T2_STR = "Mar-18-2025 11:00:00 AM UTC"
-T3_STR = "Mar-18-2025 05:10:00 PM UTC"
+def load_config():
+    config = {}
+    try:
+        with open("config.csv", "r") as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                key = row.get("key")
+                value = row.get("value")
+                if key and value:
+                    config[key] = value
+    except FileNotFoundError:
+        print("FILE NOT FOUND config.csv")
+    except Exception as e:
+        print(f"An error occurred while loading config.csv: {e}")
+    return config
 
-TOKEN_CONTRACT_ADDRESS = "0xC52AA2014d70f90EDaC790F49de088A3A65C2992"
+config = load_config()
 
-API_KEY = os.getenv("BSCSCAN_API_KEY", "")
-API_URL_BASE = "https://api.bscscan.com/api"
+T1_STR = config.get("T1_STR", "Mar-18-2025 06:00:00 AM UTC")
+T2_STR = config.get("T2_STR", "Mar-18-2025 11:00:00 AM UTC")
+T3_STR = config.get("T3_STR", "Mar-18-2025 05:10:00 PM UTC")
+TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0xC52AA2014d70f90EDaC790F49de088A3A65C2992")
+API_KEY = config.get("API_KEY", os.getenv("BSCSCAN_API_KEY", ""))
+API_URL_BSC = config.get("API_URL_BSC", "https://api.bscscan.com/api")
+BLOCK_CHUNK_SIZE = int(config.get("BLOCK_CHUNK_SIZE", 1200))
+FREQUENCY_INTERVAL_SECONDS = int(config.get("FREQUENCY_INTERVAL_SECONDS", 60))
+MIN_FREQ_VIOLATIONS = int(config.get("MIN_FREQ_VIOLATIONS", 5))
+MIN_TX_COUNT = int(config.get("MIN_TX_COUNT", 10))
+DELAY_BETWEEN_REQUESTS = float(config.get("DELAY_BETWEEN_REQUESTS", 0.2))
+MAX_RETRIES = int(config.get("MAX_RETRIES", 3))
+WALLETS_FOLDER = config.get("WALLETS_FOLDER", "Wallets")
+LOGS_FOLDER = config.get("LOGS_FOLDER", "Logs")
+CACHE_FILE = os.path.join(WALLETS_FOLDER, config.get("CACHE_FILE", "wallet_frequency_cache.json"))
+DEX_API_URL = config.get("DEX_API_URL", "https://api.dexscreener.com/latest/dex/tokens/{}")
+WBNB_ADDRESS = config.get("WBNB_ADDRESS", "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
+NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "BNB")
+LOG_FILE = os.path.join(LOGS_FOLDER, config.get("LOG_FILE", "error_log.txt"))
 
-BLOCK_CHUNK_SIZE = 1200
-
-FREQUENCY_INTERVAL_SECONDS = 60
-MIN_FREQ_VIOLATIONS = 5
-MIN_TX_COUNT = 10
-
-DELAY_BETWEEN_REQUESTS = 0.2
-MAX_RETRIES = 3
-
-WALLETS_FOLDER = "Wallets"
-LOGS_FOLDER = "Logs"
-
-CACHE_FILE = os.path.join(WALLETS_FOLDER, "wallet_frequency_cache.json")
-
-DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
-WBNB_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
-NATIVE_TOKEN_NAME = "BNB"
-
-LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
+for key, default_value in [
+    ("T1_STR", "Mar-18-2025 06:00:00 UTC"),
+    ("T2_STR", "Mar-18-2025 11:00:00 UTC"),
+    ("T3_STR", "Mar-18-2025 05:10:00 UTC"),
+    ("TOKEN_CONTRACT_ADDRESS", "0xC52AA2014d70f90EDaC790F49de088A3A65C2992"),
+    ("API_KEY", os.getenv("BSCSCAN_API_KEY", "")),
+    ("API_URL_BSC", "https://api.bscscan.com/api"),
+    ("BLOCK_CHUNK_SIZE", 1200),
+    ("FREQUENCY_INTERVAL_SECONDS", 60),
+    ("MIN_FREQ_VIOLATIONS", 5),
+    ("MIN_TX_COUNT", 10),
+    ("DELAY_BETWEEN_REQUESTS", 0.2),
+    ("MAX_RETRIES", 3),
+    ("WALLETS_FOLDER", "Wallets"),
+    ("LOGS_FOLDER", "Logs"),
+    ("CACHE_FILE", "wallet_frequency_cache.json"),
+    ("DEX_API_URL", "https://api.dexscreener.com/latest/dex/tokens/{}"),
+    ("WBNB_ADDRESS", "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"),
+    ("NATIVE_TOKEN_NAME", "BNB"),
+    ("LOG_FILE", "error_log.txt"),
+]:
+    if key not in config:
+        print(f"Missing value for {key} in config.csv. Using default: {default_value}")
 
 os.makedirs(WALLETS_FOLDER, exist_ok=True)
 os.makedirs(LOGS_FOLDER, exist_ok=True)
@@ -54,47 +88,23 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-def parse_date(date_str):
+def parse_date(date_str, subtract_hours=1):
     try:
         dt = date_parser.parse(date_str)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         else:
             dt = dt.astimezone(timezone.utc)
-        dt -= timedelta(hours=1)
+        dt -= timedelta(hours=subtract_hours)
         return int(dt.timestamp())
     except Exception as e:
-        import re
-        pattern = r'(\w+-\d{1,2}-\d{4})\s+(\d{1,2}:\d{2}:\d{2})\s+(AM|PM)\s+(UTC)'
-        match = re.match(pattern, date_str)
-        if match:
-            date_part, time_part, meridiem, tz = match.groups()
-            hour_str = time_part.split(':')[0]
-            try:
-                hour = int(hour_str)
-            except ValueError:
-                logging.error(f"Failed to convert the time from {time_part}")
-                raise e
-            if hour > 12:
-                new_date_str = f"{date_part} {time_part} {tz}"
-                try:
-                    dt = date_parser.parse(new_date_str)
-                    if dt.tzinfo is None:
-                        dt = dt.replace(tzinfo=timezone.utc)
-                    else:
-                        dt = dt.astimezone(timezone.utc)
-                    dt -= timedelta(hours=1)
-                    return int(dt.timestamp())
-                except Exception as e2:
-                    logging.error(f"Failed to fix the date format: {date_str} - {e2}")
-                    raise e2
         logging.error(f"Date parsing error {date_str}: {e}")
         raise e
 
 def api_request(params):
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            response = requests.get(API_URL_BASE, params=params, timeout=10)
+            response = requests.get(API_URL_BSC, params=params, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 if data.get("status") == "1" and "result" in data:
