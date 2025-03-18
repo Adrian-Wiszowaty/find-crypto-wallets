@@ -24,6 +24,7 @@ BLOCK_CHUNK_SIZE = 1200
 # Stałe dotyczące filtracji transakcji
 FREQUENCY_INTERVAL_SECONDS = 60  # 60 sekund
 MIN_FREQ_VIOLATIONS = 5          # jeśli co najmniej 5 odstępów mniejsze niż 60 sekund, portfel odrzucamy
+MIN_TX_COUNT = 10                # minimalna liczba transakcji do analizy
 
 # Stałe dotyczące API (retry i delay)
 DELAY_BETWEEN_REQUESTS = 0.2  # sekund
