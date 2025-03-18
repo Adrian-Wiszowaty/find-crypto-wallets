@@ -326,9 +326,10 @@ def main():
         print(f"Pobrano łącznie {len(all_transactions)} transakcji tokena.")
         
         txs_in_period = [tx for tx in all_transactions if t1_unix <= int(tx["timeStamp"]) <= t3_unix]
+        txs_in_period.sort(key=lambda tx: int(tx["timeStamp"]))
         print(f"Transakcje w okresie T1-T3: {len(txs_in_period)}")
-        
-        candidate_wallets = {}
+
+        candidate_wallets = []
         wallet_transactions = {}
         for tx in txs_in_period:
             wallet_from = tx["from"].lower()
@@ -342,9 +343,9 @@ def main():
             wallet_transactions[wallet_from].append(tx)
             wallet_transactions[wallet_to].append(tx)
             
-            if t1_unix <= tx_timestamp <= t2_unix:
-                candidate_wallets[wallet_to] = True
-        
+            if t1_unix <= tx_timestamp <= t2_unix and wallet_to not in candidate_wallets:
+                candidate_wallets.append(wallet_to)
+
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
         
         exchange_rate = get_exchange_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
