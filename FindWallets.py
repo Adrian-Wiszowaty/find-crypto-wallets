@@ -37,9 +37,6 @@ LOGS_FOLDER = "Logs"
 # Cache dla weryfikacji częstotliwości transakcji – zapisywany do pliku
 CACHE_FILE = os.path.join(WALLETS_FOLDER, "wallet_frequency_cache.json")
 
-# Minimalna wartość BNB (na razie nie używana, ale wyniesiona do stałych)
-MIN_BNB_VALUE = 0.1
-
 # Stałe dotyczące natywnego tokena (tu BNB)
 DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
 WBNB_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
