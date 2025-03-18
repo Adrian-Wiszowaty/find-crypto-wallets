@@ -1,0 +1,7 @@
+# Ignoruj folder Logs
+Logs/
+
+# Ignoruj wszystkie pliki w Wallets oprócz plików cache
+Wallets/*
+!Wallets/*.cache
+
