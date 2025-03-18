@@ -6,6 +6,5 @@ Logs/
 
 # Ignoruj wszystkie pliki i katalogi w Wallets oprócz wallet_frequency_cache.json
 Wallets/*
-!Wallets/wallet_frequency_cache.json
 
 .env
