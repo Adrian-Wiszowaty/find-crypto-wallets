@@ -8,12 +8,11 @@ from datetime import datetime, timezone
 from dateutil import parser as date_parser  # pomocnicza biblioteka do parsowania dat
 
 # ================================ KONSTANTY ================================
+T1_STR = "Mar-18-2025 06:00:00 AM UTC"
+T2_STR = "Mar-18-2025 11:00:00 AM UTC"
+T3_STR = "Mar-18-2025 02:47:00 PM UTC"
 
-T1_STR = "Mar-13-2025 11:00:00 PM UTC"
-T2_STR = "Mar-15-2025 01:00:00 AM UTC"
-T3_STR = "Mar-16-2025 05:00:00 AM UTC"
-
-TOKEN_CONTRACT_ADDRESS = "0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6"
+TOKEN_CONTRACT_ADDRESS = "0xC52AA2014d70f90EDaC790F49de088A3A65C2992"
 
 # Klucz API oraz bazowy URL do bscscan API
 API_KEY = "A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ"
@@ -37,11 +36,16 @@ LOGS_FOLDER = "Logs"
 # Cache dla weryfikacji częstotliwości transakcji – zapisywany do pliku
 CACHE_FILE = os.path.join(WALLETS_FOLDER, "wallet_frequency_cache.json")
 
-# Plik logów błędów
-LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
-
-# Minimalna wartość BNB (na razie nie używamy, ale wyniesiona do stałych)
+# Minimalna wartość BNB (na razie nie używana, ale wyniesiona do stałych)
 MIN_BNB_VALUE = 0.1
+
+# Stałe dotyczące natywnego tokena (tu BNB)
+DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
+WBNB_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+NATIVE_TOKEN_NAME = "BNB"
+
+# Ścieżka do pliku logów – wykorzystujemy ten sam plik do logowania błędów
+LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
 
 # ================================ UTWORZENIE FOLDERÓW ================================
 os.makedirs(WALLETS_FOLDER, exist_ok=True)
@@ -69,6 +73,8 @@ logging.basicConfig(
 def parse_date(date_str):
     """
     Konwertuje datę w formacie "Mar-18-2025 06:30:00 AM UTC" do znacznika unixowego.
+    Jeśli wystąpi problem z formatem (np. "Mar-17-2025 17:00:00 PM UTC"),
+    podejmujemy próbę naprawy formatu.
     """
     try:
         dt = date_parser.parse(date_str)
@@ -78,8 +84,32 @@ def parse_date(date_str):
             dt = dt.astimezone(timezone.utc)
         return int(dt.timestamp())
     except Exception as e:
+        # Próba naprawy formatu: usunięcie "AM/PM" gdy godzina jest w 24h
+        import re
+        pattern = r'(\w+-\d{1,2}-\d{4})\s+(\d{1,2}:\d{2}:\d{2})\s+(AM|PM)\s+(UTC)'
+        match = re.match(pattern, date_str)
+        if match:
+            date_part, time_part, meridiem, tz = match.groups()
+            hour_str = time_part.split(':')[0]
+            try:
+                hour = int(hour_str)
+            except ValueError:
+                logging.error(f"Nie udało się przekonwertować godziny z {time_part}")
+                raise e
+            if hour > 12:
+                new_date_str = f"{date_part} {time_part} {tz}"
+                try:
+                    dt = date_parser.parse(new_date_str)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    else:
+                        dt = dt.astimezone(timezone.utc)
+                    return int(dt.timestamp())
+                except Exception as e2:
+                    logging.error(f"Nie udało się naprawić formatu daty: {date_str} - {e2}")
+                    raise e2
         logging.error(f"Błąd parsowania daty {date_str}: {e}")
-        raise
+        raise e
 
 def api_request(params):
     """
@@ -178,6 +208,53 @@ def save_frequency_cache(cache):
     except Exception as e:
         logging.error(f"Błąd zapisu cache do {CACHE_FILE}: {e}")
 
+def get_exchange_rate(token_address, retries=5):
+    """
+    Pobiera kurs wymiany tokena względem WBNB z API Dexscreener.
+    """
+    attempt = 0
+    rate = None
+    while attempt < retries:
+        try:
+            # Pobieramy dane dla tokena z API Dexscreener
+            url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address.lower()}"
+            print(f"Generated URL for token: {url}")
+            response = requests.get(url, timeout=10)
+            
+            if response.status_code != 200:
+                logging.error(f"Odpowiedź serwera dla tokena: {response.status_code}, treść: {response.text}")
+                raise Exception(f"HTTP error dla tokena: {response.status_code}")
+            
+            data = response.json()
+            
+            # Wyszukujemy parę z WBNB
+            pairs = data.get("pairs", [])
+            for pair in pairs:
+                if WBNB_ADDRESS.lower() in (pair.get("baseToken", {}).get("address", "").lower(),
+                                            pair.get("quoteToken", {}).get("address", "").lower()):
+                    # Sprawdzamy, czy token jest bazowy czy kwotowy
+                    if pair.get("baseToken", {}).get("address", "").lower() == token_address.lower():
+                        rate = float(pair["priceNative"])  # Cena w WBNB
+                    elif pair.get("quoteToken", {}).get("address", "").lower() == token_address.lower():
+                        rate = 1 / float(pair["priceNative"])  # Odwracamy cenę
+                    break
+            
+            if rate is not None:
+                break  # Jeśli znaleziono kurs, przerywamy pętlę
+            else:
+                logging.error(f"Nie znaleziono pary z WBNB dla tokena {token_address}")
+                raise Exception("Brak odpowiedniej pary w danych API")
+        
+        except Exception as e:
+            logging.error(f"Próba {attempt + 1} pobrania kursu nie powiodła się: {e}")
+            attempt += 1
+            time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
+    
+    if rate is None:
+        rate = "error"
+    
+    return rate
+
 def frequency_check(wallet, wallet_txs, cache):
     """
     Sprawdza, czy portfel nie wykonuje transakcji zbyt często.
@@ -265,8 +342,9 @@ def write_excel(filename, header_lines, rows):
     current_row += 1  # pusta linia
     
     if rows:
+        # Klucze: wallet, purchased, final_balance, percentage, native_value
         fieldnames = list(rows[0].keys())
-        # Zapis nagłówka kolumn – pogrubione i zapisane dużymi literami
+        # Zapis nagłówka kolumn – pogrubione
         for col, name in enumerate(fieldnames, start=1):
             cell = ws.cell(row=current_row, column=col, value=name.upper())
             cell.font = Font(bold=True)
@@ -339,8 +417,12 @@ def main():
         
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
         
-        # Ładujemy cache dla weryfikacji częstotliwości
-        frequency_cache = load_frequency_cache()
+        # Pobieramy kurs wymiany tokena -> BNB na dzień T3
+        exchange_rate = get_exchange_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
+        if exchange_rate == "error":
+            print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna dla portfela ustawiona jako 'error'.")
+        else:
+            print(f"Kurs wymiany tokena -> {NATIVE_TOKEN_NAME} na dzień T3: {exchange_rate}")
         
         final_results = []
         for wallet in candidate_wallets:
@@ -351,29 +433,29 @@ def main():
             percentage = (final_balance / purchased) * 100
             if final_balance < 0.5 * purchased:
                 continue
-            if len(txs) >= 10:
-                if not frequency_check(wallet, txs, frequency_cache):
-                    print(f"Portfel {wallet} odrzucony ze względu na zbyt częste transakcje.")
-                    continue
+            
+            # Obliczenie wartości portfela w natywnym tokenie (BNB)
+            if exchange_rate != "error":
+                native_value = final_balance * exchange_rate  # Pełna wartość bez zaokrąglania
+            else:
+                native_value = "error"
+            
             final_results.append({
                 "wallet": wallet,
                 "purchased": purchased,
                 "final_balance": final_balance,
-                "percentage": f"{percentage:.2f}%"
+                "percentage": f"{percentage:.2f}%",
+                "native_value": native_value  # Pełna wartość
             })
         
         print(f"Portfeli po filtracji: {len(final_results)}")
-        save_frequency_cache(frequency_cache)
         
+        # Zapis wyników do pliku Excel
         header_lines = [
             f"TOKEN_CONTRACT_ADDRESS: {TOKEN_CONTRACT_ADDRESS}",
             f"T1: {T1_STR}",
             f"T2: {T2_STR}",
             f"T3: {T3_STR}",
-            f"BLOCK_CHUNK_SIZE: {BLOCK_CHUNK_SIZE}",
-            f"FREQUENCY_INTERVAL_SECONDS: {FREQUENCY_INTERVAL_SECONDS}",
-            f"MIN_FREQ_VIOLATIONS: {MIN_FREQ_VIOLATIONS}",
-            f"MIN_BNB_VALUE: {MIN_BNB_VALUE}"
         ]
         
         output_filename = get_output_filename()
