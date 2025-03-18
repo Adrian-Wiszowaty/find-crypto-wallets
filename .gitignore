@@ -1,7 +1,10 @@
+# Ignoruj plik .DS_Store
+.DS_Store
+
 # Ignoruj folder Logs
 Logs/
 
-# Ignoruj wszystkie pliki w Wallets oprócz plików cache
+# Ignoruj wszystkie pliki i katalogi w Wallets oprócz wallet_frequency_cache.json
 Wallets/*
-!Wallets/*.cache
+!Wallets/wallet_frequency_cache.json
 
