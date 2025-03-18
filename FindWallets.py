@@ -214,10 +214,9 @@ def get_exchange_rate(token_address, retries=5):
 
 def frequency_check(wallet, wallet_txs, cache):
     if wallet in cache:
-        return cache[wallet]
+        return False
     
-    if len(wallet_txs) < 10:
-        cache[wallet] = True
+    if len(wallet_txs) < MIN_TX_COUNT:
         return True
 
     sorted_txs = sorted(wallet_txs, key=lambda x: int(x["timeStamp"]), reverse=True)
@@ -229,9 +228,12 @@ def frequency_check(wallet, wallet_txs, cache):
         t2 = int(last_10[i+1]["timeStamp"])
         if (t1 - t2) < FREQUENCY_INTERVAL_SECONDS:
             violations += 1
-    result = (violations < MIN_FREQ_VIOLATIONS)
-    cache[wallet] = result
-    return result
+    
+    if violations >= MIN_FREQ_VIOLATIONS:
+        cache[wallet] = True
+        return False
+    
+    return True
 
 def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
     purchased = 0.0
@@ -354,9 +356,16 @@ def main():
         else:
             print(f"Kurs wymiany tokena -> {NATIVE_TOKEN_NAME} na dzień T3: {exchange_rate}")
         
+        frequency_cache = load_frequency_cache()
+
         final_results = []
         for wallet in candidate_wallets:
             txs = wallet_transactions.get(wallet, [])
+            
+            if not frequency_check(wallet, txs, frequency_cache):
+                print(f"Portfel {wallet} odrzucony z powodu zbyt częstych transakcji.")
+                continue
+            
             purchased, final_balance = simulate_wallet_balance(wallet, txs, t1_unix, t2_unix, t3_unix)
             if purchased == 0:
                 continue
@@ -376,6 +385,8 @@ def main():
                 "percentage": f"{percentage:.2f}%",
                 "native_value": native_value
             })
+
+        save_frequency_cache(frequency_cache)
         
         print(f"Portfeli po filtracji: {len(final_results)}")
         
