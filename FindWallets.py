@@ -239,6 +239,9 @@ def frequency_check(wallet, wallet_txs, cache):
 def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
     purchased = 0.0
     balance = 0.0
+    purchase_count = 0
+    sale_count = 0
+
     for tx in wallet_txs:
         ts = int(tx["timeStamp"])
         try:
@@ -253,9 +256,12 @@ def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
                 balance += amount
                 if t1_unix <= ts <= t2_unix:
                     purchased += amount
+                    purchase_count += 1
             elif tx["from"].lower() == wallet.lower():
                 balance -= amount
-    return purchased, balance
+                sale_count += 1
+
+    return purchased, balance, purchase_count, sale_count
 
 def get_output_filename():
     base_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}.xlsx")
@@ -367,7 +373,7 @@ def main():
                 print(f"Portfel {wallet} odrzucony z powodu zbyt częstych transakcji.")
                 continue
             
-            purchased, final_balance = simulate_wallet_balance(wallet, txs, t1_unix, t2_unix, t3_unix)
+            purchased, final_balance, purchase_count, sale_count = simulate_wallet_balance(wallet, txs, t1_unix, t2_unix, t3_unix)
             if purchased == 0:
                 continue
             percentage = (final_balance / purchased) * 100
@@ -383,6 +389,8 @@ def main():
                 "wallet": wallet,
                 "purchased": purchased,
                 "final_balance": final_balance,
+                "purchase_count": purchase_count,
+                "sale_count": sale_count,
                 "percentage": f"{percentage:.2f}%",
                 "native_value": native_value
             })
