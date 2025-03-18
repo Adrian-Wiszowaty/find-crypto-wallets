@@ -4,12 +4,12 @@ import time
 import os
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dateutil import parser as date_parser
 
 T1_STR = "Mar-18-2025 06:00:00 AM UTC"
 T2_STR = "Mar-18-2025 11:00:00 AM UTC"
-T3_STR = "Mar-18-2025 02:47:00 PM UTC"
+T3_STR = "Mar-18-2025 05:10:00 PM UTC"
 
 TOKEN_CONTRACT_ADDRESS = "0xC52AA2014d70f90EDaC790F49de088A3A65C2992"
 
@@ -61,6 +61,7 @@ def parse_date(date_str):
             dt = dt.replace(tzinfo=timezone.utc)
         else:
             dt = dt.astimezone(timezone.utc)
+        dt -= timedelta(hours=1)
         return int(dt.timestamp())
     except Exception as e:
         import re
@@ -82,6 +83,7 @@ def parse_date(date_str):
                         dt = dt.replace(tzinfo=timezone.utc)
                     else:
                         dt = dt.astimezone(timezone.utc)
+                    dt -= timedelta(hours=1)
                     return int(dt.timestamp())
                 except Exception as e2:
                     logging.error(f"Failed to fix the date format: {date_str} - {e2}")
