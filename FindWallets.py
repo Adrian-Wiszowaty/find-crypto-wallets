@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import requests
 import time
-import csv
 import os
 import json
 import logging
@@ -9,11 +8,11 @@ from datetime import datetime, timezone
 from dateutil import parser as date_parser
 
 
-T1_STR = "Mar-18-2025 06:30:00 AM UTC"
-T2_STR = "Mar-18-2025 07:45:0 AM UTC"
-T3_STR = "Mar-18-2025 08:10:00 AM UTC"
+T1_STR = "Mar-13-2025 11:00:00 PM UTC"
+T2_STR = "Mar-15-2025 01:00:00 AM UTC"
+T3_STR = "Mar-16-2025 05:00:00 AM UTC"
 
-TOKEN_CONTRACT_ADDRESS = "0x4B2099aB95249DC45E269C90e27B522E05F3D28C"
+TOKEN_CONTRACT_ADDRESS = "0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6"
 
 API_KEY = os.getenv("BSCSCAN_API_KEY", "")
 API_URL_BASE = "https://api.bscscan.com/api"
@@ -53,7 +52,6 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-
 def parse_date(date_str):
     try:
         dt = date_parser.parse(date_str)
@@ -65,7 +63,6 @@ def parse_date(date_str):
     except Exception as e:
         logging.error(f"Date parsing error {date_str}: {e}")
         raise
-
 
 def api_request(params):
     for attempt in range(1, MAX_RETRIES + 1):
@@ -86,7 +83,6 @@ def api_request(params):
         time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
     raise Exception("Failed to get a valid response from the API after the maximum number of attempts.")
 
-
 def get_block_by_timestamp(timestamp, closest="before"):
     params = {
         "module": "block",
@@ -102,7 +98,6 @@ def get_block_by_timestamp(timestamp, closest="before"):
     except Exception as e:
         logging.error(f"Failed to fetch block number for timestamp {timestamp}: {e}")
         raise
-
 
 def get_token_transactions(startblock, endblock):
     all_txs = []
@@ -134,7 +129,6 @@ def get_token_transactions(startblock, endblock):
             time.sleep(DELAY_BETWEEN_REQUESTS)
     return all_txs
 
-
 def load_frequency_cache():
     if os.path.exists(CACHE_FILE):
         try:
@@ -144,14 +138,12 @@ def load_frequency_cache():
             logging.error(f"Error loading cache from {CACHE_FILE}: {e}")
     return {}
 
-
 def save_frequency_cache(cache):
     try:
         with open(CACHE_FILE, "w") as f:
             json.dump(cache, f)
     except Exception as e:
         logging.error(f"Error saving cache to {CACHE_FILE}: {e}")
-
 
 def frequency_check(wallet, wallet_txs, cache):
     if wallet in cache:
@@ -174,7 +166,6 @@ def frequency_check(wallet, wallet_txs, cache):
     cache[wallet] = result
     return result
 
-
 def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
     purchased = 0.0
     balance = 0.0
@@ -196,81 +187,101 @@ def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
                 balance -= amount
     return purchased, balance
 
-
 def get_output_filename():
-    base_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}.csv")
+    base_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}.xlsx")
     if not os.path.exists(base_name):
         return base_name
     suffix = 1
     while True:
-        new_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}_{suffix}.csv")
+        new_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}_{suffix}.xlsx")
         if not os.path.exists(new_name):
             return new_name
         suffix += 1
 
+def write_excel(filename, header_lines, rows):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
 
-def write_csv(filename, header_lines, rows):
-    try:
-        with open(filename, mode="w", newline="") as csvfile:
-            writer = csv.writer(csvfile)
-            for header in header_lines:
-                if isinstance(header, list):
-                    writer.writerow(header)
-                else:
-                    writer.writerow([header])
-            writer.writerow([])
-            if rows:
-                fieldnames = list(rows[0].keys())
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                for row in rows:
-                    writer.writerow(row)
-    except Exception as e:
-        logging.error(f"Error saving CSV file {filename}: {e}")
-        raise
-
+    wb = Workbook()
+    ws = wb.active
+    current_row = 1
+    
+    for header in header_lines:
+        cell = ws.cell(row=current_row, column=1, value=header)
+        cell.font = Font(italic=True, color="808080")
+        current_row += 1
+    
+    current_row += 1
+    
+    if rows:
+        fieldnames = list(rows[0].keys())
+        for col, name in enumerate(fieldnames, start=1):
+            cell = ws.cell(row=current_row, column=col, value=name.upper())
+            cell.font = Font(bold=True)
+        current_row += 1
+        
+        for row in rows:
+            for col, key in enumerate(fieldnames, start=1):
+                value = row.get(key, "")
+                if key in ["purchased", "final_balance"]:
+                    try:
+                        value = float(value)
+                    except:
+                        pass
+                ws.cell(row=current_row, column=col, value=value)
+            current_row += 1
+        
+        for col in ws.columns:
+            max_length = 0
+            col_letter = col[0].column_letter
+            for cell in col:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            ws.column_dimensions[col_letter].width = max_length + 2
+    else:
+        ws.cell(row=current_row, column=1, value="Brak danych")
+    
+    wb.save(filename)
 
 def main():
     try:
         print("Rozpoczynam działanie skryptu...")
-
         t1_unix = parse_date(T1_STR)
         t2_unix = parse_date(T2_STR)
         t3_unix = parse_date(T3_STR)
         print(f"T1: {t1_unix}, T2: {t2_unix}, T3: {t3_unix}")
-
+        
         start_block = get_block_by_timestamp(t1_unix, closest="after")
         end_block = get_block_by_timestamp(t3_unix, closest="before")
         print(f"Zakres bloków: {start_block} - {end_block}")
-
+        
         all_transactions = get_token_transactions(start_block, end_block)
         print(f"Pobrano łącznie {len(all_transactions)} transakcji tokena.")
-
+        
         txs_in_period = [tx for tx in all_transactions if t1_unix <= int(tx["timeStamp"]) <= t3_unix]
         print(f"Transakcje w okresie T1-T3: {len(txs_in_period)}")
-
+        
         candidate_wallets = {}
         wallet_transactions = {}
-
         for tx in txs_in_period:
             wallet_from = tx["from"].lower()
             wallet_to = tx["to"].lower()
             tx_timestamp = int(tx["timeStamp"])
-
+            
             if wallet_from not in wallet_transactions:
                 wallet_transactions[wallet_from] = []
             if wallet_to not in wallet_transactions:
                 wallet_transactions[wallet_to] = []
             wallet_transactions[wallet_from].append(tx)
             wallet_transactions[wallet_to].append(tx)
-
+            
             if t1_unix <= tx_timestamp <= t2_unix:
                 candidate_wallets[wallet_to] = True
-
+        
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
-
+        
         frequency_cache = load_frequency_cache()
-
+        
         final_results = []
         for wallet in candidate_wallets:
             txs = wallet_transactions.get(wallet, [])
@@ -278,26 +289,22 @@ def main():
             if purchased == 0:
                 continue
             percentage = (final_balance / purchased) * 100
-
             if final_balance < 0.5 * purchased:
                 continue
-
             if len(txs) >= 10:
                 if not frequency_check(wallet, txs, frequency_cache):
                     print(f"Portfel {wallet} odrzucony ze względu na zbyt częste transakcje.")
                     continue
-
             final_results.append({
                 "wallet": wallet,
                 "purchased": purchased,
                 "final_balance": final_balance,
                 "percentage": f"{percentage:.2f}%"
             })
-
+        
         print(f"Portfeli po filtracji: {len(final_results)}")
-
         save_frequency_cache(frequency_cache)
-
+        
         header_lines = [
             f"TOKEN_CONTRACT_ADDRESS: {TOKEN_CONTRACT_ADDRESS}",
             f"T1: {T1_STR}",
@@ -308,15 +315,13 @@ def main():
             f"MIN_FREQ_VIOLATIONS: {MIN_FREQ_VIOLATIONS}",
             f"MIN_BNB_VALUE: {MIN_BNB_VALUE}"
         ]
-
+        
         output_filename = get_output_filename()
-        write_csv(output_filename, header_lines, final_results)
+        write_excel(output_filename, header_lines, final_results)
         print(f"Wyniki zapisane do pliku: {output_filename}")
-
     except Exception as e:
         logging.error(f"Main function error: {e}")
         print("A critical error occurred. Check the logs in:", LOG_FILE)
-
 
 if __name__ == "__main__":
     main()
