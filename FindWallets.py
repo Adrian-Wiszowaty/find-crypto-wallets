@@ -616,13 +616,13 @@ def main():
             
             final_results.append({
                 "wallet": wallet,
-                "purchased": purchased,
-                "final_balance": final_balance,
                 "purchase_count": purchase_count,
                 "sale_count": sale_count,
                 "percentage": f"{percentage:.2f}%",
                 "native_value": native_value,
-                "usd_value": usd_value
+                "usd_value": usd_value,
+                "purchased": purchased,
+                "final_balance": final_balance,
             })
 
         save_frequency_cache(frequency_cache)
