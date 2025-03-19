@@ -5,36 +5,29 @@ import os
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-import csv
 
-def load_config():
+# Funkcja do ładowania konfiguracji z pliku config.json
+def load_json_config(config_file="config.json"):
     """
-    Ładuje konfigurację z pliku config.csv. Jeśli plik nie istnieje, wyświetla komunikat
-    i zwraca pusty słownik. Jeśli wystąpi problem z pobraniem wartości, używane są wartości domyślne.
+    Ładuje konfigurację z pliku config.json. Jeśli plik nie istnieje, wyświetla komunikat
+    i zwraca pusty słownik.
     """
-    config = {}
     try:
-        with open("config.csv", "r") as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                key = row.get("key")
-                value = row.get("value")
-                if key and value:
-                    config[key] = value
+        with open(config_file, "r") as f:
+            return json.load(f)
     except FileNotFoundError:
-        print("BRAK PLIKU config.csv")
+        print(f"BRAK PLIKU {config_file}")
     except Exception as e:
-        print(f"Wystąpił błąd podczas ładowania pliku config.csv: {e}")
-    return config
+        print(f"Wystąpił błąd podczas ładowania pliku {config_file}: {e}")
+    return {}
 
 # ================================ KONSTANTY ================================
-# Wczytanie konfiguracji
-config = load_config()
 
-# Dodajemy nową zmienną NETWORK – wybieramy: BSC, ETH lub BASE
-NETWORK = config.get("NETWORK", "BASE").upper()
+# Ładowanie konfiguracji z pliku config.json
+config = load_json_config()
 
 # Pobieranie wartości z konfiguracji lub używanie domyślnych
+NETWORK = config.get("NETWORK", "ETH")
 T1_STR = config.get("T1_STR", "17-03-2025 22:25:00")
 T2_STR = config.get("T2_STR", "18-03-2025 19:30:00")
 T3_STR = config.get("T3_STR", "19-03-2025 20:00:00")
@@ -42,14 +35,14 @@ TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B
 
 # Dla każdej sieci oddzielny API_KEY oraz API_URL
 # BSC
-API_KEY_BSC = config.get("API_KEY", "A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ")
-API_URL_BSC = config.get("API_URL_BSC", "https://api.bscscan.com/api")
+API_KEY_BSC = "A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ"
+API_URL_BSC = "https://api.bscscan.com/api"
 # ETH
-API_KEY_ETH = config.get("API_KEY_ETH", "ZWPZR1RE3327TU3PWRFSWNF4CM621AZFI9")
-API_URL_ETH = config.get("API_URL_ETH", "https://api.etherscan.io/api")
+API_KEY_ETH = "ZWPZR1RE3327TU3PWRFSWNF4CM621AZFI9"
+API_URL_ETH = "https://api.etherscan.io/api"
 # BASE
-API_KEY_BASE = config.get("API_KEY_BASE", "YJA2NW17BI66Y3JV5UVY4FC2BHKXICH7YX")
-API_URL_BASE = config.get("API_URL_BASE", "https://api.basescan.org/api")
+API_KEY_BASE = "YJA2NW17BI66Y3JV5UVY4FC2BHKXICH7YX"
+API_URL_BASE = "https://api.basescan.org/api"
 
 # Wybieramy odpowiednie API_KEY oraz API_URL na podstawie wybranej sieci
 if NETWORK == "BSC":
@@ -65,64 +58,34 @@ else:
     raise Exception(f"Nieobsługiwana sieć: {NETWORK}")
 
 # Stałe dotyczące pozostałych ustawień
-BLOCK_CHUNK_SIZE = int(config.get("BLOCK_CHUNK_SIZE", 1200))
-FREQUENCY_INTERVAL_SECONDS = int(config.get("FREQUENCY_INTERVAL_SECONDS", 60))
-MIN_FREQ_VIOLATIONS = int(config.get("MIN_FREQ_VIOLATIONS", 5))
-MIN_TX_COUNT = int(config.get("MIN_TX_COUNT", 10))
-DELAY_BETWEEN_REQUESTS = float(config.get("DELAY_BETWEEN_REQUESTS", 0.2))
-MAX_RETRIES = int(config.get("MAX_RETRIES", 3))
-MIN_USD_VALUE = float(config.get("MIN_USD_VALUE", 100.0))  # Minimalna wartość w USD
-WALLETS_FOLDER = config.get("WALLETS_FOLDER", "Wallets")
-LOGS_FOLDER = config.get("LOGS_FOLDER", "Logs")
-CACHE_FILE = os.path.join(WALLETS_FOLDER, config.get("CACHE_FILE", "wallet_frequency_cache.json"))
-DEX_API_URL = config.get("DEX_API_URL", "https://api.dexscreener.com/latest/dex/tokens/{}")
+BLOCK_CHUNK_SIZE = 1200
+FREQUENCY_INTERVAL_SECONDS = 60
+MIN_FREQ_VIOLATIONS = 5
+MIN_TX_COUNT = 10
+DELAY_BETWEEN_REQUESTS = 0.2
+MAX_RETRIES = 3
+MIN_USD_VALUE = 100.0  # Minimalna wartość w USD
+WALLETS_FOLDER = "Wallets"
+LOGS_FOLDER = "Logs"
+CACHE_FILE = os.path.join(WALLETS_FOLDER, "wallet_frequency_cache.json")
+DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
+
 # Adres natywnego tokena: dla BSC był WBNB, dla ETH i BASE będzie WETH – tutaj osobno definiujemy
 if NETWORK == "BASE":
-    BASE_NATIVE_ADDRESS = config.get("BASE_NATIVE_ADDRESS", "0x4200000000000000000000000000000000000006")
+    BASE_NATIVE_ADDRESS = "0x4200000000000000000000000000000000000006"
     WETH_ADDRESS = BASE_NATIVE_ADDRESS  # BASE używa tego samego adresu co WETH
-    NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "ETH")
+    NATIVE_TOKEN_NAME = "ETH"
     NATIVE_TOKEN_FULL_NAME = "ethereum"
 elif NETWORK == "ETH":
-    WETH_ADDRESS = config.get("WETH_ADDRESS", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
-    NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "ETH")
+    WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    NATIVE_TOKEN_NAME = "ETH"
     NATIVE_TOKEN_FULL_NAME = "ethereum"
 else:  # BSC
-    WBNB_ADDRESS = config.get("WBNB_ADDRESS", "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
-    NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "BNB")
+    WBNB_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+    NATIVE_TOKEN_NAME = "BNB"
     NATIVE_TOKEN_FULL_NAME = "binancecoin"
 
-LOG_FILE = os.path.join(LOGS_FOLDER, config.get("LOG_FILE", "error_log.txt"))
-
-# Informacja o brakujących wartościach
-for key, default_value in [
-    ("NETWORK", "BSC"),
-    ("T1_STR", "Mar-18-2025 06:00:00 UTC"),
-    ("T2_STR", "Mar-18-2025 11:00:00 UTC"),
-    ("T3_STR", "Mar-18-2025 05:10:00 UTC"),
-    ("TOKEN_CONTRACT_ADDRESS", "0xC52AA2014d70f90EDaC790F49de088A3A65C2992"),
-    ("API_KEY", "A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ"),
-    ("API_URL_BSC", "https://api.bscscan.com/api"),
-    ("API_KEY_ETH", "ZWPZR1RE3327TU3PWRFSWNF4CM621AZFI9"),
-    ("API_URL_ETH", "https://api.etherscan.io/api"),
-    ("API_KEY_BASE", "YJA2NW17BI66Y3JV5UVY4FC2BHKXICH7YX"),
-    ("API_URL_BASE", "https://api.basescan.org/api"),
-    ("BLOCK_CHUNK_SIZE", 1200),
-    ("FREQUENCY_INTERVAL_SECONDS", 60),
-    ("MIN_FREQ_VIOLATIONS", 5),
-    ("MIN_TX_COUNT", 10),
-    ("DELAY_BETWEEN_REQUESTS", 0.2),
-    ("MAX_RETRIES", 3),
-    ("WALLETS_FOLDER", "Wallets"),
-    ("LOGS_FOLDER", "Logs"),
-    ("CACHE_FILE", "wallet_frequency_cache.json"),
-    ("DEX_API_URL", "https://api.dexscreener.com/latest/dex/tokens/{}"),
-    ("WBNB_ADDRESS", "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"),
-    ("WETH_ADDRESS", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
-    ("NATIVE_TOKEN_NAME", "BNB"),
-    ("LOG_FILE", "error_log.txt"),
-]:
-    if key not in config:
-        print(f"Brak wartości dla {key} w pliku config.csv. Używana wartość domyślna: {default_value}")
+LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
 
 # ================================ UTWORZENIE FOLDERÓW ================================
 os.makedirs(WALLETS_FOLDER, exist_ok=True)
@@ -562,7 +525,7 @@ def main():
         filtered_wallets = []
         total_wallets = len(candidate_wallets)
         for index, wallet in enumerate(candidate_wallets, start=1):
-            print(f"Sprawdzanie portfela {index}/{total_wallets}: {wallet}")
+            print(f"{index}/{total_wallets}: {wallet}")
             txs = wallet_transactions.get(wallet, [])
             if wallet in frequency_cache:
                 print(f"Portfel {wallet} odrzucony (był w cache).")
