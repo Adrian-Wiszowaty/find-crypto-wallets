@@ -27,9 +27,9 @@ config = load_config()
 
 NETWORK = config.get("NETWORK", "BASE").upper()
 
-T1_STR = config.get("T1_STR", "19-03-2025 05:25:00")
-T2_STR = config.get("T2_STR", "19-03-2025 10:30:00")
-T3_STR = config.get("T3_STR", "19-03-2025 12:0:00")
+T1_STR = config.get("T1_STR", "17-03-2025 22:25:00")
+T2_STR = config.get("T2_STR", "18-03-2025 19:30:00")
+T3_STR = config.get("T3_STR", "19-03-2025 20:00:00")
 TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B189c27678C0f551c08c01D150")
 
 API_KEY_BSC = config.get("API_KEY", os.getenv("BSCSCAN_API_KEY", ""))
@@ -325,9 +325,6 @@ def get_last_wallet_transactions(wallet, retries=3, count=10):
     return []
 
 def frequency_check(wallet, wallet_txs, cache):
-    if wallet in cache:
-        return False
-    
     if len(wallet_txs) < MIN_TX_COUNT:
         return True
 
@@ -342,15 +339,11 @@ def frequency_check(wallet, wallet_txs, cache):
             violations += 1
     
     if violations >= MIN_FREQ_VIOLATIONS:
-        cache[wallet] = True
         return False
     
     return True
 
 def frequency_check_wallet(wallet, cache):
-    if wallet in cache:
-        return False
-    
     last_txs = get_last_wallet_transactions(wallet, retries=MAX_RETRIES, count=10)
     if not last_txs or len(last_txs) < 2:
         return True
@@ -364,7 +357,6 @@ def frequency_check_wallet(wallet, cache):
             violations += 1
 
     if violations >= MIN_FREQ_VIOLATIONS:
-        cache[wallet] = True
         return False
 
     return True
@@ -495,8 +487,13 @@ def main():
         
         frequency_cache = load_frequency_cache()
         filtered_wallets = []
-        for wallet in candidate_wallets:
+        total_wallets = len(candidate_wallets)
+        for index, wallet in enumerate(candidate_wallets, start=1):
+            print(f"Sprawdzanie portfela {index}/{total_wallets}: {wallet}")
             txs = wallet_transactions.get(wallet, [])
+            if wallet in frequency_cache:
+                print(f"Portfel {wallet} odrzucony (był w cache).")
+                continue
             if not frequency_check(wallet, txs, frequency_cache):
                 print(f"Portfel {wallet} odrzucony (częste transakcje tokena).")
                 continue
@@ -565,8 +562,8 @@ def main():
         write_excel(output_filename, header_lines, final_results)
         
         elapsed_time = time.time() - start_time
-        print(f"Wyniki zapisane do pliku: {output_filename}")
-        print(f"Czas wykonania skryptu do momentu zapisu pliku: {elapsed_time:.2f} sekundy")
+        elapsed_minutes, elapsed_seconds = divmod(elapsed_time, 60)
+        print(f"Czas wykonania skryptu do momentu zapisu pliku: {int(elapsed_minutes):02}:{int(elapsed_seconds):02}")
     except Exception as e:
         logging.error(f"Main function error: {e}")
         print("A critical error occurred. Check the logs in:", LOG_FILE)
