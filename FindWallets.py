@@ -35,9 +35,9 @@ config = load_config()
 NETWORK = config.get("NETWORK", "BASE").upper()
 
 # Pobieranie wartości z konfiguracji lub używanie domyślnych
-T1_STR = config.get("T1_STR", "19-03-2025 05:25:00")
-T2_STR = config.get("T2_STR", "19-03-2025 10:30:00")
-T3_STR = config.get("T3_STR", "19-03-2025 12:0:00")
+T1_STR = config.get("T1_STR", "17-03-2025 22:25:00")
+T2_STR = config.get("T2_STR", "18-03-2025 19:30:00")
+T3_STR = config.get("T3_STR", "19-03-2025 20:00:00")
 TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B189c27678C0f551c08c01D150")
 
 # Dla każdej sieci oddzielny API_KEY oraz API_URL
@@ -380,11 +380,7 @@ def frequency_check(wallet, wallet_txs, cache):
     """
     Sprawdza, czy portfel nie wykonuje transakcji zbyt często.
     Używamy ostatnich 10 transakcji (dotyczących danego tokena).
-    """
-    # Jeśli portfel jest w cache, oznacza to, że został odrzucony
-    if wallet in cache:
-        return False  # Portfel odrzucony
-    
+    """    
     if len(wallet_txs) < MIN_TX_COUNT:
         return True  # Portfel akceptowany, brak wystarczających danych do odrzucenia
 
@@ -399,7 +395,6 @@ def frequency_check(wallet, wallet_txs, cache):
             violations += 1
     
     if violations >= MIN_FREQ_VIOLATIONS:
-        cache[wallet] = True  # Dodajemy portfel do cache jako odrzucony
         return False  # Portfel odrzucony
     
     return True  # Portfel akceptowany
@@ -409,9 +404,6 @@ def frequency_check_wallet(wallet, cache):
     Dodatkowa weryfikacja portfela – pobieramy ostatnie 10 transakcji (wszystkie typy)
     i sprawdzamy, czy odstępy między transakcjami nie są zbyt krótkie.
     """
-    if wallet in cache:
-        return False  # Portfel już odrzucony
-    
     last_txs = get_last_wallet_transactions(wallet, retries=MAX_RETRIES, count=10)
     if not last_txs or len(last_txs) < 2:
         return True  # Brak wystarczających danych do odrzucenia
@@ -426,7 +418,6 @@ def frequency_check_wallet(wallet, cache):
             violations += 1
 
     if violations >= MIN_FREQ_VIOLATIONS:
-        cache[wallet] = True  # Dodajemy do cache jako odrzucony
         return False
 
     return True
@@ -569,8 +560,13 @@ def main():
         # Krok 1: Weryfikacja na podstawie transakcji tokena
         frequency_cache = load_frequency_cache()
         filtered_wallets = []
-        for wallet in candidate_wallets:
+        total_wallets = len(candidate_wallets)
+        for index, wallet in enumerate(candidate_wallets, start=1):
+            print(f"Sprawdzanie portfela {index}/{total_wallets}: {wallet}")
             txs = wallet_transactions.get(wallet, [])
+            if wallet in frequency_cache:
+                print(f"Portfel {wallet} odrzucony (był w cache).")
+                continue
             if not frequency_check(wallet, txs, frequency_cache):
                 print(f"Portfel {wallet} odrzucony (częste transakcje tokena).")
                 continue
@@ -641,8 +637,8 @@ def main():
         
         # Mierzenie czasu do momentu tworzenia pliku
         elapsed_time = time.time() - start_time
-        print(f"Wyniki zapisane do pliku: {output_filename}")
-        print(f"Czas wykonania skryptu do momentu zapisu pliku: {elapsed_time:.2f} sekundy")
+        elapsed_minutes, elapsed_seconds = divmod(elapsed_time, 60)
+        print(f"Czas wykonania skryptu do momentu zapisu pliku: {int(elapsed_minutes):02}:{int(elapsed_seconds):02}")
     except Exception as e:
         logging.error(f"Błąd głównej funkcji: {e}")
         print("Wystąpił krytyczny błąd. Sprawdź logi w pliku:", LOG_FILE)
