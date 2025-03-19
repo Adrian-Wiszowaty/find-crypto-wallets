@@ -5,7 +5,6 @@ import os
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-from dateutil import parser as date_parser
 import csv
 
 def load_config():
@@ -297,6 +296,34 @@ def get_native_to_usd_rate(retries=3):
     
     return rate
 
+def get_last_wallet_transactions(wallet, retries=3, count=10):
+    attempt = 0
+    while attempt < retries:
+        try:
+            params = {
+                "module": "account",
+                "action": "txlist",
+                "address": wallet,
+                "page": 1,
+                "offset": count,
+                "sort": "desc",
+                "apikey": API_KEY_USED
+            }
+            response = requests.get(API_URL, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if "result" in data and isinstance(data["result"], list):
+                    return data["result"]
+                else:
+                    logging.error(f"Nieoczekiwany format odpowiedzi przy pobieraniu transakcji portfela {wallet}: {data}")
+            else:
+                logging.error(f"HTTP error {response.status_code} while fetching transactions for wallet {wallet}")
+        except Exception as e:
+            logging.error(f"Exception while fetching transactions for wallet {wallet}, attempt {attempt+1}: {e}")
+        attempt += 1
+        time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
+    return []
+
 def frequency_check(wallet, wallet_txs, cache):
     if wallet in cache:
         return False
@@ -318,6 +345,28 @@ def frequency_check(wallet, wallet_txs, cache):
         cache[wallet] = True
         return False
     
+    return True
+
+def frequency_check_wallet(wallet, cache):
+    if wallet in cache:
+        return False
+    
+    last_txs = get_last_wallet_transactions(wallet, retries=MAX_RETRIES, count=10)
+    if not last_txs or len(last_txs) < 2:
+        return True
+
+    violations = 0
+    last_txs_sorted = sorted(last_txs, key=lambda x: int(x["timeStamp"]), reverse=True)
+    for i in range(len(last_txs_sorted) - 1):
+        t1 = int(last_txs_sorted[i]["timeStamp"])
+        t2 = int(last_txs_sorted[i + 1]["timeStamp"])
+        if (t1 - t2) < FREQUENCY_INTERVAL_SECONDS:
+            violations += 1
+
+    if violations >= MIN_FREQ_VIOLATIONS:
+        cache[wallet] = True
+        return False
+
     return True
 
 def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
@@ -403,6 +452,8 @@ def write_excel(filename, header_lines, rows):
     
     wb.save(filename)
 
+start_time = time.time()
+
 def main():
     try:
         print(f"Wybrana sieć: {NETWORK}")
@@ -442,6 +493,19 @@ def main():
 
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
         
+        frequency_cache = load_frequency_cache()
+        filtered_wallets = []
+        for wallet in candidate_wallets:
+            txs = wallet_transactions.get(wallet, [])
+            if not frequency_check(wallet, txs, frequency_cache):
+                print(f"Portfel {wallet} odrzucony (częste transakcje tokena).")
+                continue
+            if not frequency_check_wallet(wallet, frequency_cache):
+                print(f"Portfel {wallet} odrzucony (częste transakcje pełne).")
+                continue
+            filtered_wallets.append(wallet)
+        print(f"Portfeli po weryfikacji: {len(filtered_wallets)}")
+        
         exchange_rate = get_exchange_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
         if exchange_rate == "error":
             print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna ustawiona jako 'error'.")
@@ -454,15 +518,9 @@ def main():
         else:
             print(f"Kurs wymiany {NATIVE_TOKEN_NAME} -> USD: {native_to_usd_rate}")
         
-        frequency_cache = load_frequency_cache()
-
         final_results = []
-        for wallet in candidate_wallets:
+        for wallet in filtered_wallets:
             txs = wallet_transactions.get(wallet, [])
-            if not frequency_check(wallet, txs, frequency_cache):
-                print(f"Portfel {wallet} odrzucony z powodu zbyt częstych transakcji.")
-                continue
-            
             purchased, final_balance, purchase_count, sale_count = simulate_wallet_balance(wallet, txs, t1_unix, t2_unix, t3_unix)
             if purchased == 0:
                 continue
@@ -505,7 +563,10 @@ def main():
         
         output_filename = get_output_filename()
         write_excel(output_filename, header_lines, final_results)
+        
+        elapsed_time = time.time() - start_time
         print(f"Wyniki zapisane do pliku: {output_filename}")
+        print(f"Czas wykonania skryptu do momentu zapisu pliku: {elapsed_time:.2f} sekundy")
     except Exception as e:
         logging.error(f"Main function error: {e}")
         print("A critical error occurred. Check the logs in:", LOG_FILE)
