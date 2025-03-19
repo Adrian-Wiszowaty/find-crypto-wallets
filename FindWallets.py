@@ -5,39 +5,32 @@ import os
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-import csv
 
-def load_config():
-    config = {}
+def load_json_config(config_file="config.json"):
     try:
-        with open("config.csv", "r") as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                key = row.get("key")
-                value = row.get("value")
-                if key and value:
-                    config[key] = value
+        with open(config_file, "r") as f:
+            return json.load(f)
     except FileNotFoundError:
-        print("FILE NOT FOUND config.csv")
+        print(f"FILE NOT FOUND {config_file}")
     except Exception as e:
-        print(f"An error occurred while loading config.csv: {e}")
-    return config
+        print(f"An error occurred while loading file {config_file}: {e}")
+    return {}
 
-config = load_config()
 
-NETWORK = config.get("NETWORK", "BASE").upper()
+config = load_json_config()
 
+NETWORK = config.get("NETWORK", "ETH")
 T1_STR = config.get("T1_STR", "17-03-2025 22:25:00")
 T2_STR = config.get("T2_STR", "18-03-2025 19:30:00")
 T3_STR = config.get("T3_STR", "19-03-2025 20:00:00")
 TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B189c27678C0f551c08c01D150")
 
-API_KEY_BSC = config.get("API_KEY", os.getenv("BSCSCAN_API_KEY", ""))
-API_URL_BSC = config.get("API_URL_BSC", "https://api.bscscan.com/api")
-API_KEY_ETH = config.get("API_KEY_ETH", os.getenv("ETHERSCAN_API_KEY", ""))
-API_URL_ETH = config.get("API_URL_ETH", "https://api.etherscan.io/api")
-API_KEY_BASE = config.get("API_KEY_BASE", os.getenv("BASESCAN_API_KEY", ""))
-API_URL_BASE = config.get("API_URL_BASE", "https://api.basescan.org/api")
+API_KEY_BSC = os.getenv("BSCSCAN_API_KEY", "")
+API_URL_BSC = "https://api.bscscan.com/api"
+API_KEY_ETH = os.getenv("ETHERSCAN_API_KEY", "")
+API_URL_ETH = "https://api.etherscan.io/api"
+API_KEY_BASE = os.getenv("BASESCAN_API_KEY", "")
+API_URL_BASE = "https://api.basescan.org/api"
 
 if NETWORK == "BSC":
     API_KEY_USED = API_KEY_BSC
@@ -51,62 +44,33 @@ elif NETWORK == "BASE":
 else:
     raise Exception(f"Unsupported network: {NETWORK}")
 
-BLOCK_CHUNK_SIZE = int(config.get("BLOCK_CHUNK_SIZE", 1200))
-FREQUENCY_INTERVAL_SECONDS = int(config.get("FREQUENCY_INTERVAL_SECONDS", 60))
-MIN_FREQ_VIOLATIONS = int(config.get("MIN_FREQ_VIOLATIONS", 5))
-MIN_TX_COUNT = int(config.get("MIN_TX_COUNT", 10))
-DELAY_BETWEEN_REQUESTS = float(config.get("DELAY_BETWEEN_REQUESTS", 0.2))
-MAX_RETRIES = int(config.get("MAX_RETRIES", 3))
-MIN_USD_VALUE = float(config.get("MIN_USD_VALUE", 100.0))
-WALLETS_FOLDER = config.get("WALLETS_FOLDER", "Wallets")
-LOGS_FOLDER = config.get("LOGS_FOLDER", "Logs")
-CACHE_FILE = os.path.join(WALLETS_FOLDER, config.get("CACHE_FILE", "wallet_frequency_cache.json"))
-DEX_API_URL = config.get("DEX_API_URL", "https://api.dexscreener.com/latest/dex/tokens/{}")
+BLOCK_CHUNK_SIZE = 1200
+FREQUENCY_INTERVAL_SECONDS = 60
+MIN_FREQ_VIOLATIONS = 5
+MIN_TX_COUNT = 10
+DELAY_BETWEEN_REQUESTS = 0.2
+MAX_RETRIES = 3
+MIN_USD_VALUE = 100.0
+WALLETS_FOLDER = "Wallets"
+LOGS_FOLDER = "Logs"
+CACHE_FILE = os.path.join(WALLETS_FOLDER, "wallet_frequency_cache.json")
+DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
+
 if NETWORK == "BASE":
-    BASE_NATIVE_ADDRESS = config.get("BASE_NATIVE_ADDRESS", "0x4200000000000000000000000000000000000006")
+    BASE_NATIVE_ADDRESS = "0x4200000000000000000000000000000000000006"
     WETH_ADDRESS = BASE_NATIVE_ADDRESS
-    NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "ETH")
+    NATIVE_TOKEN_NAME = "ETH"
     NATIVE_TOKEN_FULL_NAME = "ethereum"
 elif NETWORK == "ETH":
-    WETH_ADDRESS = config.get("WETH_ADDRESS", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
-    NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "ETH")
+    WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    NATIVE_TOKEN_NAME = "ETH"
     NATIVE_TOKEN_FULL_NAME = "ethereum"
 else:
-    WBNB_ADDRESS = config.get("WBNB_ADDRESS", "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
-    NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "BNB")
+    WBNB_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+    NATIVE_TOKEN_NAME = "BNB"
     NATIVE_TOKEN_FULL_NAME = "binancecoin"
 
-LOG_FILE = os.path.join(LOGS_FOLDER, config.get("LOG_FILE", "error_log.txt"))
-
-for key, default_value in [
-    ("NETWORK", "BSC"),
-    ("T1_STR", "Mar-18-2025 06:00:00 UTC"),
-    ("T2_STR", "Mar-18-2025 11:00:00 UTC"),
-    ("T3_STR", "Mar-18-2025 05:10:00 UTC"),
-    ("TOKEN_CONTRACT_ADDRESS", "0xC52AA2014d70f90EDaC790F49de088A3A65C2992"),
-    ("API_KEY", os.getenv("BSCSCAN_API_KEY", "")),
-    ("API_URL_BSC", "https://api.bscscan.com/api"),
-    ("API_KEY_ETH", os.getenv("ETHERSCAN_API_KEY", "")),
-    ("API_URL_ETH", "https://api.etherscan.io/api"),
-    ("API_KEY_BASE", os.getenv("BASESCAN_API_KEY", "")),
-    ("API_URL_BASE", "https://api.basescan.org/api"),
-    ("BLOCK_CHUNK_SIZE", 1200),
-    ("FREQUENCY_INTERVAL_SECONDS", 60),
-    ("MIN_FREQ_VIOLATIONS", 5),
-    ("MIN_TX_COUNT", 10),
-    ("DELAY_BETWEEN_REQUESTS", 0.2),
-    ("MAX_RETRIES", 3),
-    ("WALLETS_FOLDER", "Wallets"),
-    ("LOGS_FOLDER", "Logs"),
-    ("CACHE_FILE", "wallet_frequency_cache.json"),
-    ("DEX_API_URL", "https://api.dexscreener.com/latest/dex/tokens/{}"),
-    ("WBNB_ADDRESS", "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"),
-    ("WETH_ADDRESS", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
-    ("NATIVE_TOKEN_NAME", "BNB"),
-    ("LOG_FILE", "error_log.txt"),
-]:
-    if key not in config:
-        print(f"Missing value for {key} in config.csv. Using default: {default_value}")
+LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
 
 os.makedirs(WALLETS_FOLDER, exist_ok=True)
 os.makedirs(LOGS_FOLDER, exist_ok=True)
@@ -489,7 +453,7 @@ def main():
         filtered_wallets = []
         total_wallets = len(candidate_wallets)
         for index, wallet in enumerate(candidate_wallets, start=1):
-            print(f"Sprawdzanie portfela {index}/{total_wallets}: {wallet}")
+            print(f"{index}/{total_wallets}: {wallet}")
             txs = wallet_transactions.get(wallet, [])
             if wallet in frequency_cache:
                 print(f"Portfel {wallet} odrzucony (był w cache).")
