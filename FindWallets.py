@@ -5,7 +5,6 @@ import os
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-from dateutil import parser as date_parser
 import csv
 
 def load_config():
@@ -174,7 +173,6 @@ def api_request(params):
                 data = response.json()
                 # Podstawowa walidacja odpowiedzi – sprawdzamy, czy mamy "result"
                 if "result" in data:
-                    # Dla niektórych zapytań status może być "1"
                     if data.get("status") == "1" or isinstance(data["result"], list):
                         return data
                     elif data.get("message") == "No transactions found":
@@ -282,7 +280,6 @@ def get_exchange_rate(token_address, retries=5):
             data = response.json()
             pairs = data.get("pairs", [])
             for pair in pairs:
-                # Dla BSC sprawdzamy WBNB, dla ETH/BASE sprawdzamy WETH
                 native_addr = WETH_ADDRESS.lower() if NETWORK in ["ETH", "BASE"] else WBNB_ADDRESS.lower()
                 if native_addr in (pair.get("baseToken", {}).get("address", "").lower(),
                                    pair.get("quoteToken", {}).get("address", "").lower()):
@@ -321,7 +318,7 @@ def get_native_to_usd_rate(retries=3):
             
             if response.status_code == 429:
                 logging.error("Przekroczono limit zapytań do CoinGecko. Oczekiwanie na kolejną próbę...")
-                time.sleep(10)  # Oczekiwanie 10 sekund przed kolejną próbą
+                time.sleep(10)
                 attempt += 1
                 continue
             
@@ -347,10 +344,42 @@ def get_native_to_usd_rate(retries=3):
     
     return rate
 
+def get_last_wallet_transactions(wallet, retries=3, count=10):
+    """
+    Pobiera ostatnie 'count' transakcji dla danego portfela, niezależnie od tokena,
+    korzystając z endpointu txlist.
+    """
+    attempt = 0
+    while attempt < retries:
+        try:
+            params = {
+                "module": "account",
+                "action": "txlist",
+                "address": wallet,
+                "page": 1,
+                "offset": count,
+                "sort": "desc",
+                "apikey": API_KEY_USED
+            }
+            response = requests.get(API_URL, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if "result" in data and isinstance(data["result"], list):
+                    return data["result"]
+                else:
+                    logging.error(f"Nieoczekiwany format odpowiedzi przy pobieraniu transakcji portfela {wallet}: {data}")
+            else:
+                logging.error(f"Błąd HTTP {response.status_code} przy pobieraniu transakcji portfela {wallet}")
+        except Exception as e:
+            logging.error(f"Wyjątek przy pobieraniu transakcji portfela {wallet}, próba {attempt+1}: {e}")
+        attempt += 1
+        time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
+    return []
+
 def frequency_check(wallet, wallet_txs, cache):
     """
     Sprawdza, czy portfel nie wykonuje transakcji zbyt często.
-    Używamy ostatnich 10 transakcji.
+    Używamy ostatnich 10 transakcji (dotyczących danego tokena).
     """
     # Jeśli portfel jest w cache, oznacza to, że został odrzucony
     if wallet in cache:
@@ -369,12 +398,38 @@ def frequency_check(wallet, wallet_txs, cache):
         if (t1 - t2) < FREQUENCY_INTERVAL_SECONDS:
             violations += 1
     
-    # Jeśli liczba naruszeń przekracza próg, dodajemy portfel do cache
     if violations >= MIN_FREQ_VIOLATIONS:
         cache[wallet] = True  # Dodajemy portfel do cache jako odrzucony
         return False  # Portfel odrzucony
     
     return True  # Portfel akceptowany
+
+def frequency_check_wallet(wallet, cache):
+    """
+    Dodatkowa weryfikacja portfela – pobieramy ostatnie 10 transakcji (wszystkie typy)
+    i sprawdzamy, czy odstępy między transakcjami nie są zbyt krótkie.
+    """
+    if wallet in cache:
+        return False  # Portfel już odrzucony
+    
+    last_txs = get_last_wallet_transactions(wallet, retries=MAX_RETRIES, count=10)
+    if not last_txs or len(last_txs) < 2:
+        return True  # Brak wystarczających danych do odrzucenia
+
+    violations = 0
+    # Sortujemy transakcje od najnowszej do najstarszej
+    last_txs_sorted = sorted(last_txs, key=lambda x: int(x["timeStamp"]), reverse=True)
+    for i in range(len(last_txs_sorted) - 1):
+        t1 = int(last_txs_sorted[i]["timeStamp"])
+        t2 = int(last_txs_sorted[i + 1]["timeStamp"])
+        if (t1 - t2) < FREQUENCY_INTERVAL_SECONDS:
+            violations += 1
+
+    if violations >= MIN_FREQ_VIOLATIONS:
+        cache[wallet] = True  # Dodajemy do cache jako odrzucony
+        return False
+
+    return True
 
 def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
     """
@@ -468,6 +523,9 @@ def write_excel(filename, header_lines, rows):
     
     wb.save(filename)
 
+# Na początku skryptu
+start_time = time.time()  # Zapisujemy czas startu
+
 def main():
     try:
         print(f"Wybrana sieć: {NETWORK}")
@@ -488,6 +546,7 @@ def main():
         txs_in_period.sort(key=lambda tx: int(tx["timeStamp"]))
         print(f"Transakcje w okresie T1-T3: {len(txs_in_period)}")
 
+        # Wyznaczamy kandydatów na podstawie transakcji tokena – portfele, które wykonały zakup w okresie T1-T2
         candidate_wallets = []
         wallet_transactions = {}
         for tx in txs_in_period:
@@ -507,6 +566,21 @@ def main():
 
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
         
+        # Krok 1: Weryfikacja na podstawie transakcji tokena
+        frequency_cache = load_frequency_cache()
+        filtered_wallets = []
+        for wallet in candidate_wallets:
+            txs = wallet_transactions.get(wallet, [])
+            if not frequency_check(wallet, txs, frequency_cache):
+                print(f"Portfel {wallet} odrzucony (częste transakcje tokena).")
+                continue
+            # Krok 2: Dodatkowa weryfikacja – pobieramy ostatnie 10 transakcji (wszystkie transakcje)
+            if not frequency_check_wallet(wallet, frequency_cache):
+                print(f"Portfel {wallet} odrzucony (częste transakcje pełne).")
+                continue
+            filtered_wallets.append(wallet)
+        print(f"Portfeli po weryfikacji: {len(filtered_wallets)}")
+        
         exchange_rate = get_exchange_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
         if exchange_rate == "error":
             print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna ustawiona jako 'error'.")
@@ -519,15 +593,9 @@ def main():
         else:
             print(f"Kurs wymiany {NATIVE_TOKEN_NAME} -> USD: {native_to_usd_rate}")
         
-        frequency_cache = load_frequency_cache()
-
         final_results = []
-        for wallet in candidate_wallets:
+        for wallet in filtered_wallets:
             txs = wallet_transactions.get(wallet, [])
-            if not frequency_check(wallet, txs, frequency_cache):
-                print(f"Portfel {wallet} odrzucony z powodu zbyt częstych transakcji.")
-                continue
-            
             purchased, final_balance, purchase_count, sale_count = simulate_wallet_balance(wallet, txs, t1_unix, t2_unix, t3_unix)
             if purchased == 0:
                 continue
@@ -542,7 +610,6 @@ def main():
                 native_value = "error"
                 usd_value = "error"
             
-            # Filtracja portfeli o wartości w USD mniejszej niż MIN_USD_VALUE
             if usd_value != "error" and usd_value < MIN_USD_VALUE:
                 print(f"Portfel {wallet} odrzucony z powodu niskiej wartości w USD: {usd_value}")
                 continue
@@ -555,7 +622,7 @@ def main():
                 "sale_count": sale_count,
                 "percentage": f"{percentage:.2f}%",
                 "native_value": native_value,
-                "usd_value": usd_value  # Dodanie wartości w USD
+                "usd_value": usd_value
             })
 
         save_frequency_cache(frequency_cache)
@@ -571,7 +638,11 @@ def main():
         
         output_filename = get_output_filename()
         write_excel(output_filename, header_lines, final_results)
+        
+        # Mierzenie czasu do momentu tworzenia pliku
+        elapsed_time = time.time() - start_time
         print(f"Wyniki zapisane do pliku: {output_filename}")
+        print(f"Czas wykonania skryptu do momentu zapisu pliku: {elapsed_time:.2f} sekundy")
     except Exception as e:
         logging.error(f"Błąd głównej funkcji: {e}")
         print("Wystąpił krytyczny błąd. Sprawdź logi w pliku:", LOG_FILE)
