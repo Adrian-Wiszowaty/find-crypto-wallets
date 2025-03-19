@@ -4,8 +4,8 @@ import time
 import os
 import json
 import logging
-from datetime import datetime, timezone, timedelta  # Dodaj import timedelta
-from dateutil import parser as date_parser  # pomocnicza biblioteka do parsowania dat
+from datetime import datetime, timezone, timedelta
+from dateutil import parser as date_parser
 import csv
 
 def load_config():
@@ -32,35 +32,81 @@ def load_config():
 # Wczytanie konfiguracji
 config = load_config()
 
+# Dodajemy nową zmienną NETWORK – wybieramy: BSC, ETH lub BASE
+NETWORK = config.get("NETWORK", "BASE").upper()
+
 # Pobieranie wartości z konfiguracji lub używanie domyślnych
-T1_STR = config.get("T1_STR", "Mar-18-2025 06:00:00 AM UTC")
-T2_STR = config.get("T2_STR", "Mar-18-2025 11:00:00 AM UTC")
-T3_STR = config.get("T3_STR", "Mar-18-2025 05:10:00 PM UTC")
-TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0xC52AA2014d70f90EDaC790F49de088A3A65C2992")
-API_KEY = config.get("API_KEY", "A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ")
+T1_STR = config.get("T1_STR", "19-03-2025 05:25:00")
+T2_STR = config.get("T2_STR", "19-03-2025 10:30:00")
+T3_STR = config.get("T3_STR", "19-03-2025 12:0:00")
+TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B189c27678C0f551c08c01D150")
+
+# Dla każdej sieci oddzielny API_KEY oraz API_URL
+# BSC
+API_KEY_BSC = config.get("API_KEY", "A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ")
 API_URL_BSC = config.get("API_URL_BSC", "https://api.bscscan.com/api")
+# ETH
+API_KEY_ETH = config.get("API_KEY_ETH", "ZWPZR1RE3327TU3PWRFSWNF4CM621AZFI9")
+API_URL_ETH = config.get("API_URL_ETH", "https://api.etherscan.io/api")
+# BASE
+API_KEY_BASE = config.get("API_KEY_BASE", "YJA2NW17BI66Y3JV5UVY4FC2BHKXICH7YX")
+API_URL_BASE = config.get("API_URL_BASE", "https://api.basescan.org/api")
+
+# Wybieramy odpowiednie API_KEY oraz API_URL na podstawie wybranej sieci
+if NETWORK == "BSC":
+    API_KEY_USED = API_KEY_BSC
+    API_URL = API_URL_BSC
+elif NETWORK == "ETH":
+    API_KEY_USED = API_KEY_ETH
+    API_URL = API_URL_ETH
+elif NETWORK == "BASE":
+    API_KEY_USED = API_KEY_BASE
+    API_URL = API_URL_BASE
+else:
+    raise Exception(f"Nieobsługiwana sieć: {NETWORK}")
+
+# Stałe dotyczące pozostałych ustawień
 BLOCK_CHUNK_SIZE = int(config.get("BLOCK_CHUNK_SIZE", 1200))
 FREQUENCY_INTERVAL_SECONDS = int(config.get("FREQUENCY_INTERVAL_SECONDS", 60))
 MIN_FREQ_VIOLATIONS = int(config.get("MIN_FREQ_VIOLATIONS", 5))
 MIN_TX_COUNT = int(config.get("MIN_TX_COUNT", 10))
 DELAY_BETWEEN_REQUESTS = float(config.get("DELAY_BETWEEN_REQUESTS", 0.2))
 MAX_RETRIES = int(config.get("MAX_RETRIES", 3))
+MIN_USD_VALUE = float(config.get("MIN_USD_VALUE", 100.0))  # Minimalna wartość w USD
 WALLETS_FOLDER = config.get("WALLETS_FOLDER", "Wallets")
 LOGS_FOLDER = config.get("LOGS_FOLDER", "Logs")
 CACHE_FILE = os.path.join(WALLETS_FOLDER, config.get("CACHE_FILE", "wallet_frequency_cache.json"))
 DEX_API_URL = config.get("DEX_API_URL", "https://api.dexscreener.com/latest/dex/tokens/{}")
-WBNB_ADDRESS = config.get("WBNB_ADDRESS", "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
-NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "BNB")
+# Adres natywnego tokena: dla BSC był WBNB, dla ETH i BASE będzie WETH – tutaj osobno definiujemy
+if NETWORK == "BASE":
+    BASE_NATIVE_ADDRESS = config.get("BASE_NATIVE_ADDRESS", "0x4200000000000000000000000000000000000006")
+    WETH_ADDRESS = BASE_NATIVE_ADDRESS  # BASE używa tego samego adresu co WETH
+    NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "ETH")
+    NATIVE_TOKEN_FULL_NAME = "ethereum"
+elif NETWORK == "ETH":
+    WETH_ADDRESS = config.get("WETH_ADDRESS", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
+    NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "ETH")
+    NATIVE_TOKEN_FULL_NAME = "ethereum"
+else:  # BSC
+    WBNB_ADDRESS = config.get("WBNB_ADDRESS", "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c")
+    NATIVE_TOKEN_NAME = config.get("NATIVE_TOKEN_NAME", "BNB")
+    NATIVE_TOKEN_FULL_NAME = "binancecoin"
+
 LOG_FILE = os.path.join(LOGS_FOLDER, config.get("LOG_FILE", "error_log.txt"))
 
 # Informacja o brakujących wartościach
 for key, default_value in [
+    ("NETWORK", "BSC"),
     ("T1_STR", "Mar-18-2025 06:00:00 UTC"),
     ("T2_STR", "Mar-18-2025 11:00:00 UTC"),
     ("T3_STR", "Mar-18-2025 05:10:00 UTC"),
     ("TOKEN_CONTRACT_ADDRESS", "0xC52AA2014d70f90EDaC790F49de088A3A65C2992"),
     ("API_KEY", "A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ"),
     ("API_URL_BSC", "https://api.bscscan.com/api"),
+    ("API_KEY_ETH", "ZWPZR1RE3327TU3PWRFSWNF4CM621AZFI9"),
+    ("API_URL_ETH", "https://api.etherscan.io/api"),
+    ("API_KEY_BASE", "YJA2NW17BI66Y3JV5UVY4FC2BHKXICH7YX"),
+    ("API_URL_BASE", "https://api.basescan.org/api"),
     ("BLOCK_CHUNK_SIZE", 1200),
     ("FREQUENCY_INTERVAL_SECONDS", 60),
     ("MIN_FREQ_VIOLATIONS", 5),
@@ -72,6 +118,7 @@ for key, default_value in [
     ("CACHE_FILE", "wallet_frequency_cache.json"),
     ("DEX_API_URL", "https://api.dexscreener.com/latest/dex/tokens/{}"),
     ("WBNB_ADDRESS", "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"),
+    ("WETH_ADDRESS", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
     ("NATIVE_TOKEN_NAME", "BNB"),
     ("LOG_FILE", "error_log.txt"),
 ]:
@@ -94,29 +141,22 @@ def divide_blocks_into_chunks(start_block, end_block, chunk_size):
     return chunks
 # =============================================================================
 
-# Konfiguracja logowania – logujemy tylko błędy do pliku
+# Konfiguracja logowania – logujemy tylko błędy do jednego pliku
 logging.basicConfig(
     filename=LOG_FILE,
-    level=logging.ERROR,
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-def parse_date(date_str, subtract_hours=1):
+def parse_date(date_str):
     """
-    Konwertuje datę w formacie "2025-03-18 17:10:00 UTC" (24-godzinny format) do znacznika unixowego.
-    Opcjonalnie odejmuje określoną liczbę godzin.
+    Konwertuje datę w formacie "DD-MM-YYYY H:M:S" do znacznika unixowego
+    i odejmuje 1 godzinę.
     """
     try:
-        # Parsujemy datę w formacie 24-godzinnym
-        dt = date_parser.parse(date_str)
-        if dt.tzinfo is None:
-            # Jeśli brak strefy czasowej, zakładamy UTC
-            dt = dt.replace(tzinfo=timezone.utc)
-        else:
-            # Konwertujemy do UTC, jeśli strefa czasowa jest obecna
-            dt = dt.astimezone(timezone.utc)
-        # Odejmujemy godziny, jeśli podano
-        dt -= timedelta(hours=subtract_hours)
+        dt = datetime.strptime(date_str, "%d-%m-%Y %H:%M:%S")
+        dt = dt - timedelta(hours=1)  # Odejmujemy 1 godzinę
+        dt = dt.replace(tzinfo=timezone.utc)
         return int(dt.timestamp())
     except Exception as e:
         logging.error(f"Błąd parsowania daty {date_str}: {e}")
@@ -124,20 +164,25 @@ def parse_date(date_str, subtract_hours=1):
 
 def api_request(params):
     """
-    Wykonuje zapytanie do API bscscan z podanymi parametrami.
-    Implementuje retry z delay w przypadku błędów.
+    Wykonuje zapytanie do wybranego API (API_URL) z podanymi parametrami.
+    Implementuje retry z delay w przypadku błędów oraz walidację formatu odpowiedzi.
     """
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            response = requests.get(API_URL_BSC, params=params, timeout=10)
+            response = requests.get(API_URL, params=params, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                if data.get("status") == "1" and "result" in data:
-                    return data
-                elif data.get("message") == "No transactions found":
-                    return {"result": []}
+                # Podstawowa walidacja odpowiedzi – sprawdzamy, czy mamy "result"
+                if "result" in data:
+                    # Dla niektórych zapytań status może być "1"
+                    if data.get("status") == "1" or isinstance(data["result"], list):
+                        return data
+                    elif data.get("message") == "No transactions found":
+                        return {"result": []}
+                    else:
+                        logging.error(f"Błąd API (nieoczekiwany format): {data}")
                 else:
-                    logging.error(f"Błąd API: {data}")
+                    logging.error(f"Nieoczekiwana struktura odpowiedzi: {data}")
             else:
                 logging.error(f"Błąd HTTP {response.status_code}: {response.text}")
         except Exception as e:
@@ -154,7 +199,7 @@ def get_block_by_timestamp(timestamp, closest="before"):
         "action": "getblocknobytime",
         "timestamp": timestamp,
         "closest": closest,
-        "apikey": API_KEY
+        "apikey": API_KEY_USED
     }
     data = api_request(params)
     try:
@@ -179,7 +224,7 @@ def get_token_transactions(startblock, endblock):
             "startblock": current_start,
             "endblock": current_end,
             "sort": "asc",
-            "apikey": API_KEY
+            "apikey": API_KEY_USED
         }
         print(f"Pobieram transakcje dla bloków {current_start} - {current_end}...")
         try:
@@ -221,15 +266,13 @@ def save_frequency_cache(cache):
 
 def get_exchange_rate(token_address, retries=5):
     """
-    Pobiera kurs wymiany tokena względem WBNB z API Dexscreener.
+    Pobiera kurs wymiany tokena względem natywnego tokena (WBNB dla BSC, WETH dla ETH/BASE) z API Dexscreener.
     """
     attempt = 0
     rate = None
     while attempt < retries:
         try:
-            # Pobieramy dane dla tokena z API Dexscreener
-            url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address.lower()}"
-            print(f"Generated URL for token: {url}")
+            url = DEX_API_URL.format(token_address.lower())
             response = requests.get(url, timeout=10)
             
             if response.status_code != 200:
@@ -237,27 +280,65 @@ def get_exchange_rate(token_address, retries=5):
                 raise Exception(f"HTTP error dla tokena: {response.status_code}")
             
             data = response.json()
-            
-            # Wyszukujemy parę z WBNB
             pairs = data.get("pairs", [])
             for pair in pairs:
-                if WBNB_ADDRESS.lower() in (pair.get("baseToken", {}).get("address", "").lower(),
-                                            pair.get("quoteToken", {}).get("address", "").lower()):
-                    # Sprawdzamy, czy token jest bazowy czy kwotowy
+                # Dla BSC sprawdzamy WBNB, dla ETH/BASE sprawdzamy WETH
+                native_addr = WETH_ADDRESS.lower() if NETWORK in ["ETH", "BASE"] else WBNB_ADDRESS.lower()
+                if native_addr in (pair.get("baseToken", {}).get("address", "").lower(),
+                                   pair.get("quoteToken", {}).get("address", "").lower()):
                     if pair.get("baseToken", {}).get("address", "").lower() == token_address.lower():
-                        rate = float(pair["priceNative"])  # Cena w WBNB
+                        rate = float(pair["priceNative"])
                     elif pair.get("quoteToken", {}).get("address", "").lower() == token_address.lower():
-                        rate = 1 / float(pair["priceNative"])  # Odwracamy cenę
+                        rate = 1 / float(pair["priceNative"])
                     break
             
             if rate is not None:
-                break  # Jeśli znaleziono kurs, przerywamy pętlę
+                break
             else:
-                logging.error(f"Nie znaleziono pary z WBNB dla tokena {token_address}")
+                logging.error(f"Nie znaleziono pary z natywnym tokenem dla tokena {token_address}")
                 raise Exception("Brak odpowiedniej pary w danych API")
         
         except Exception as e:
             logging.error(f"Próba {attempt + 1} pobrania kursu nie powiodła się: {e}")
+            attempt += 1
+            time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
+    
+    if rate is None:
+        rate = "error"
+    
+    return rate
+
+def get_native_to_usd_rate(retries=3):
+    """
+    Pobiera kurs wymiany natywnego tokena (ETH, BNB) do USD.
+    """
+    attempt = 0
+    rate = None
+    while attempt < retries:
+        try:
+            url = f"https://api.coingecko.com/api/v3/simple/price?ids={NATIVE_TOKEN_FULL_NAME}&vs_currencies=usd"
+            response = requests.get(url, timeout=10)
+            
+            if response.status_code == 429:
+                logging.error("Przekroczono limit zapytań do CoinGecko. Oczekiwanie na kolejną próbę...")
+                time.sleep(10)  # Oczekiwanie 10 sekund przed kolejną próbą
+                attempt += 1
+                continue
+            
+            if response.status_code != 200:
+                logging.error(f"Odpowiedź serwera dla natywnego tokena: {response.status_code}, treść: {response.text}")
+                raise Exception(f"HTTP error dla natywnego tokena: {response.status_code}")
+            
+            data = response.json()
+            rate = data.get(NATIVE_TOKEN_FULL_NAME, {}).get("usd")
+            if rate is not None:
+                break
+            else:
+                logging.error(f"Nie znaleziono kursu wymiany dla natywnego tokena {NATIVE_TOKEN_FULL_NAME}")
+                raise Exception("Brak kursu wymiany w danych API")
+        
+        except Exception as e:
+            logging.error(f"Próba {attempt + 1} pobrania kursu natywnego tokena do USD nie powiodła się: {e}")
             attempt += 1
             time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
     
@@ -284,7 +365,7 @@ def frequency_check(wallet, wallet_txs, cache):
     violations = 0
     for i in range(len(last_10) - 1):
         t1 = int(last_10[i]["timeStamp"])
-        t2 = int(last_10[i+1]["timeStamp"])
+        t2 = int(last_10[i + 1]["timeStamp"])
         if (t1 - t2) < FREQUENCY_INTERVAL_SECONDS:
             violations += 1
     
@@ -298,8 +379,6 @@ def frequency_check(wallet, wallet_txs, cache):
 def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
     """
     Symuluje saldo tokenów portfela od T1 do T3.
-    Zlicza transakcje zakupowe (T1-T2), końcowe saldo (T1-T3),
-    oraz liczbę zakupów i sprzedaży.
     """
     purchased = 0.0
     balance = 0.0
@@ -330,7 +409,6 @@ def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
 def get_output_filename():
     """
     Tworzy nazwę pliku wynikowego Excel w folderze Wallets.
-    Jeśli plik już istnieje, dodaje suffix _1, _2, itd.
     """
     base_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}.xlsx")
     if not os.path.exists(base_name):
@@ -345,8 +423,6 @@ def get_output_filename():
 def write_excel(filename, header_lines, rows):
     """
     Zapisuje wyniki do pliku Excel (.xlsx) z formatowaniem.
-    Metadane umieszczone są na początku, a tabela danych ma pogrubione nagłówki
-    i automatycznie dostosowane szerokości kolumn.
     """
     from openpyxl import Workbook
     from openpyxl.styles import Font
@@ -355,7 +431,6 @@ def write_excel(filename, header_lines, rows):
     ws = wb.active
     current_row = 1
     
-    # Zapis metadanych – każda linia z informacjami
     for header in header_lines:
         cell = ws.cell(row=current_row, column=1, value=header)
         cell.font = Font(italic=True, color="808080")
@@ -364,19 +439,16 @@ def write_excel(filename, header_lines, rows):
     current_row += 1  # pusta linia
     
     if rows:
-        # Klucze: wallet, purchased, final_balance, percentage, native_value
         fieldnames = list(rows[0].keys())
-        # Zapis nagłówka kolumn – pogrubione
         for col, name in enumerate(fieldnames, start=1):
             cell = ws.cell(row=current_row, column=col, value=name.upper())
             cell.font = Font(bold=True)
         current_row += 1
         
-        # Zapis danych
         for row in rows:
             for col, key in enumerate(fieldnames, start=1):
                 value = row.get(key, "")
-                if key in ["purchased", "final_balance"]:
+                if key in ["purchased", "final_balance", "native_value", "usd_value"]:
                     try:
                         value = float(value)
                     except:
@@ -384,7 +456,6 @@ def write_excel(filename, header_lines, rows):
                 ws.cell(row=current_row, column=col, value=value)
             current_row += 1
         
-        # Automatyczne dopasowanie szerokości kolumn
         for col in ws.columns:
             max_length = 0
             col_letter = col[0].column_letter
@@ -399,29 +470,24 @@ def write_excel(filename, header_lines, rows):
 
 def main():
     try:
+        print(f"Wybrana sieć: {NETWORK}")
         print("Rozpoczynam działanie skryptu...")
-        # Konwersja dat do znaczników unixowych
         t1_unix = parse_date(T1_STR)
         t2_unix = parse_date(T2_STR)
         t3_unix = parse_date(T3_STR)
         print(f"T1: {t1_unix}, T2: {t2_unix}, T3: {t3_unix}")
         
-        # Pobieramy numery bloków dla T1, T2 oraz T3
         start_block = get_block_by_timestamp(t1_unix, closest="after")
         end_block = get_block_by_timestamp(t3_unix, closest="before")
         print(f"Zakres bloków: {start_block} - {end_block}")
         
-        # Pobieramy wszystkie transakcje tokena z zakresu T1-T3
         all_transactions = get_token_transactions(start_block, end_block)
         print(f"Pobrano łącznie {len(all_transactions)} transakcji tokena.")
         
-        # Filtrowanie transakcji tylko dla okresu T1-T3
         txs_in_period = [tx for tx in all_transactions if t1_unix <= int(tx["timeStamp"]) <= t3_unix]
-        # Sortujemy transakcje według znacznika czasu
         txs_in_period.sort(key=lambda tx: int(tx["timeStamp"]))
         print(f"Transakcje w okresie T1-T3: {len(txs_in_period)}")
 
-        # Budujemy listę kandydatów – portfeli, które dokonały zakupu (T1-T2)
         candidate_wallets = []
         wallet_transactions = {}
         for tx in txs_in_period:
@@ -436,31 +502,31 @@ def main():
             wallet_transactions[wallet_from].append(tx)
             wallet_transactions[wallet_to].append(tx)
             
-            # Dodajemy portfel do listy kandydatów, jeśli zakup miał miejsce w okresie T1-T2
             if t1_unix <= tx_timestamp <= t2_unix and wallet_to not in candidate_wallets:
                 candidate_wallets.append(wallet_to)
 
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
         
-        # Pobieramy kurs wymiany tokena -> BNB na dzień T3
         exchange_rate = get_exchange_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
         if exchange_rate == "error":
-            print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna dla portfela ustawiona jako 'error'.")
+            print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna ustawiona jako 'error'.")
         else:
             print(f"Kurs wymiany tokena -> {NATIVE_TOKEN_NAME} na dzień T3: {exchange_rate}")
         
-        # Ładowanie cache na początku
+        native_to_usd_rate = get_native_to_usd_rate()
+        if native_to_usd_rate == "error":
+            print("Nie udało się pobrać kursu wymiany natywnego tokena do USD.")
+        else:
+            print(f"Kurs wymiany {NATIVE_TOKEN_NAME} -> USD: {native_to_usd_rate}")
+        
         frequency_cache = load_frequency_cache()
 
-        # Przetwarzanie portfeli
         final_results = []
         for wallet in candidate_wallets:
             txs = wallet_transactions.get(wallet, [])
-            
-            # Sprawdzamy częstotliwość transakcji
             if not frequency_check(wallet, txs, frequency_cache):
                 print(f"Portfel {wallet} odrzucony z powodu zbyt częstych transakcji.")
-                continue  # Pomijamy odrzucone portfele
+                continue
             
             purchased, final_balance, purchase_count, sale_count = simulate_wallet_balance(wallet, txs, t1_unix, t2_unix, t3_unix)
             if purchased == 0:
@@ -469,11 +535,17 @@ def main():
             if final_balance < 0.5 * purchased:
                 continue
             
-            # Obliczenie wartości portfela w natywnym tokenie (BNB)
-            if exchange_rate != "error":
-                native_value = final_balance * exchange_rate  # Pełna wartość bez zaokrąglania
+            if exchange_rate != "error" and native_to_usd_rate != "error":
+                native_value = final_balance * exchange_rate
+                usd_value = native_value * native_to_usd_rate
             else:
                 native_value = "error"
+                usd_value = "error"
+            
+            # Filtracja portfeli o wartości w USD mniejszej niż MIN_USD_VALUE
+            if usd_value != "error" and usd_value < MIN_USD_VALUE:
+                print(f"Portfel {wallet} odrzucony z powodu niskiej wartości w USD: {usd_value}")
+                continue
             
             final_results.append({
                 "wallet": wallet,
@@ -482,20 +554,19 @@ def main():
                 "purchase_count": purchase_count,
                 "sale_count": sale_count,
                 "percentage": f"{percentage:.2f}%",
-                "native_value": native_value  # Pełna wartość
+                "native_value": native_value,
+                "usd_value": usd_value  # Dodanie wartości w USD
             })
 
-        # Zapis cache na końcu
         save_frequency_cache(frequency_cache)
-        
         print(f"Portfeli po filtracji: {len(final_results)}")
         
-        # Zapis wyników do pliku Excel
         header_lines = [
             f"TOKEN_CONTRACT_ADDRESS: {TOKEN_CONTRACT_ADDRESS}",
             f"T1: {T1_STR}",
             f"T2: {T2_STR}",
             f"T3: {T3_STR}",
+            f"NETWORK: {NETWORK}"
         ]
         
         output_filename = get_output_filename()
