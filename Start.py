@@ -20,16 +20,19 @@ root = ttk.Window(title="Find Wallets", themename="flatly")
 root.minsize(600, 400)
 root.grid_columnconfigure(0, weight=1, uniform="equal")  # Sprawia, że kolumna 0 (gdzie znajdują się widgety) jest elastyczna
 style = ttk.Style()
-style.configure("TCombobox", fieldbackground="white")
-style.map("TCombobox", fieldbackground=[("readonly", "white")])
+style.configure("info.TCombobox",
+                fieldbackground="white",
+                bordercolor=style.colors.info,
+                arrowcolor=style.colors.info)
+style.map("info.TCombobox", fieldbackground=[("readonly", "white")])
+
+
 
 # ======================= FUNKCJE POMOCNICZE =======================
 def create_time_combobox(parent, values):
-    # Usuwamy bootstyle, by nie nadpisywał ustawień stylu
-    combo = ttk.Combobox(parent, values=values, width=3, state="readonly", style="TCombobox")
+    combo = ttk.Combobox(parent, values=values, width=3, state="readonly", style="info.TCombobox")
     combo.current(0)
     return combo
-
 
 def create_datetime_section(parent, label_text, row, initial_date=None):
     frame = ttk.Frame(parent)
