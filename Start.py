@@ -16,7 +16,7 @@ padx = 5
 pady = 5
 
 # ======================= GŁÓWNE OKNO APLIKACJI =======================
-root = ttk.Window(title="Konfiguracja skryptu blockchain", themename="flatly")
+root = ttk.Window(title="Find Wallets", themename="flatly")
 root.minsize(600, 400)
 root.grid_columnconfigure(0, weight=1, uniform="equal")  # Sprawia, że kolumna 0 (gdzie znajdują się widgety) jest elastyczna
 
@@ -141,12 +141,15 @@ log_widget.grid(row=0, column=0, padx=padx, pady=5, columnspan=2, sticky="ew")
 # Przekierowanie stdout do widgetu logów
 sys.stdout = LogRedirector(log_widget)
 
-# --- Adres kontraktu tokena ---
-frame_contract = ttk.Frame(root)
+# --- Sekcja Adres kontraktu tokena (analogicznie jak T1, T2, T3) ---
+frame_contract = ttk.Labelframe(root, text="Token")
 frame_contract.grid(row=1, column=0, padx=padx, pady=pady, sticky="ew")
+frame_contract.grid_columnconfigure(1, weight=1)  # Kolumna z polem edycji
+
 ttk.Label(frame_contract, text="Adres kontraktu:").grid(row=0, column=0, padx=padx, pady=pady, sticky="w")
 token_contract_entry = ttk.Entry(frame_contract, width=40)
-token_contract_entry.grid(row=0, column=1, padx=padx, pady=pady)
+token_contract_entry.grid(row=0, column=1, padx=padx, pady=pady, sticky="ew")
+
 
 # Sekcja T1
 frame_t1 = ttk.Labelframe(root, text="T1 (Rozpoczęcie zakupów)")
@@ -208,10 +211,11 @@ copy_t2_to_t3_button = ttk.Button(
 )
 copy_t2_to_t3_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="w")  # Przyciski wyśrodkowane
 
-
-# --- Wybór sieci i przycisk Uruchom ---
+# Sekcja Wybór sieci
 frame_network = ttk.Frame(root)
 frame_network.grid(row=5, column=0, padx=padx, pady=pady, sticky="ew")
+
+# Etykieta i Combobox w jednej kolumnie
 ttk.Label(frame_network, text="Wybierz sieć:").grid(row=0, column=0, padx=padx, pady=pady, sticky="w")
 network_var = ttk.StringVar()
 network_combo = ttk.Combobox(
@@ -221,11 +225,21 @@ network_combo = ttk.Combobox(
 network_combo.grid(row=0, column=1, padx=padx, pady=pady, sticky="w")
 network_combo.current(0)
 
+# Ustawienie elastyczności kolumn
+frame_network.grid_columnconfigure(0, weight=0)  # Etykieta nie rośnie
+frame_network.grid_columnconfigure(1, weight=1)  # Combobox rośnie
+
+# Kolumna z przyciskiem "Uruchom"
 run_button = ttk.Button(
-    frame_network, text="Uruchom", width=20, style="danger.TButton",
+    frame_network, text="Uruchom", width=19, style="danger.TButton", 
     command=lambda: save_and_run(log_widget)
 )
+
+# Przycisk "Uruchom" w osobnej kolumnie, przypięty do prawej strony
 run_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="e")
+
+# Konfiguracja kolumn: 0 i 1 dla etykiety i comboboxa oraz 2 dla przycisku
+frame_network.grid_columnconfigure(2, weight=0)  # Kolumna z przyciskiem ma stałą szerokość
 
 # --- Wczytanie zapisanej konfiguracji, jeśli istnieje ---
 try:
