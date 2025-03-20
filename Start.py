@@ -15,6 +15,11 @@ CONFIG_FILE = "config.json"
 padx = 5
 pady = 5
 
+# ======================= GŁÓWNE OKNO APLIKACJI =======================
+root = ttk.Window(title="Konfiguracja skryptu blockchain", themename="flatly")
+root.minsize(600, 400)
+root.grid_columnconfigure(0, weight=1, uniform="equal")  # Sprawia, że kolumna 0 (gdzie znajdują się widgety) jest elastyczna
+
 # ======================= FUNKCJE POMOCNICZE =======================
 def create_time_combobox(parent, values):
     combo = ttk.Combobox(parent, values=values, width=3, state="readonly", bootstyle="info")
@@ -23,12 +28,19 @@ def create_time_combobox(parent, values):
 
 def create_datetime_section(parent, label_text, row, initial_date=None):
     frame = ttk.Frame(parent)
-    frame.pack(padx=padx, pady=pady, fill="x")
+    frame.grid(row=row, column=0, padx=padx, pady=pady, sticky="ew")
     
-    ttk.Label(frame, text=label_text).pack(side="left", padx=padx, pady=pady)
+    # Konfiguracja kolumn w ramce, aby tylko DateEntry rozciągało się na całą szerokość
+    frame.grid_columnconfigure(0, weight=0)  # Stała szerokość dla labela
+    frame.grid_columnconfigure(1, weight=1)  # Elastyczna szerokość dla DateEntry
+    frame.grid_columnconfigure(2, weight=0)  # Stała szerokość dla godzin
+    frame.grid_columnconfigure(3, weight=0)  # Stała szerokość dla minut
+    frame.grid_columnconfigure(4, weight=0)  # Stała szerokość dla sekund
+
+    ttk.Label(frame, text=label_text).grid(row=0, column=0, padx=padx, pady=pady, sticky="w")
     
     date_entry = DateEntry(frame, width=12, firstweekday=1, dateformat="%Y-%m-%d", bootstyle="info")
-    date_entry.pack(side="left", padx=padx, pady=pady)
+    date_entry.grid(row=0, column=1, padx=padx, pady=pady, sticky="ew")  # Zmieniono sticky na "ew"
     
     if initial_date:
         date_entry.entry.delete(0, 'end')
@@ -38,11 +50,11 @@ def create_datetime_section(parent, label_text, row, initial_date=None):
     minutes = [f"{i:02d}" for i in range(60)]
     seconds = [f"{i:02d}" for i in range(60)]
     hour_combo = create_time_combobox(frame, hours)
-    hour_combo.pack(side="left", padx=padx, pady=pady)
+    hour_combo.grid(row=0, column=2, padx=padx, pady=pady, sticky="w")
     minute_combo = create_time_combobox(frame, minutes)
-    minute_combo.pack(side="left", padx=padx, pady=pady)
+    minute_combo.grid(row=0, column=3, padx=padx, pady=pady, sticky="w")
     second_combo = create_time_combobox(frame, seconds)
-    second_combo.pack(side="left", padx=padx, pady=pady)
+    second_combo.grid(row=0, column=4, padx=padx, pady=pady, sticky="w")
     
     return date_entry, hour_combo, minute_combo, second_combo
 
@@ -123,27 +135,30 @@ def run_process(log_widget):
         messagebox.showerror("Błąd", f"Coś poszło nie tak: {str(e)}")
     run_button.config(state="normal")
 
-# ======================= GŁÓWNE OKNO APLIKACJI =======================
-root = ttk.Window(title="Konfiguracja skryptu blockchain", themename="flatly")
-root.minsize(600, 400)
-
 # --- Okno logów na górze ---
 log_widget = Text(root, height=15, width=70)
-log_widget.pack(padx=padx, pady=5, fill="x")
+log_widget.grid(row=0, column=0, padx=padx, pady=5, columnspan=2, sticky="ew")
 # Przekierowanie stdout do widgetu logów
 sys.stdout = LogRedirector(log_widget)
 
 # --- Adres kontraktu tokena ---
 frame_contract = ttk.Frame(root)
-frame_contract.pack(fill="x", padx=padx, pady=pady)
-ttk.Label(frame_contract, text="Adres kontraktu:").pack(side="left", padx=padx, pady=pady)
+frame_contract.grid(row=1, column=0, padx=padx, pady=pady, sticky="ew")
+ttk.Label(frame_contract, text="Adres kontraktu:").grid(row=0, column=0, padx=padx, pady=pady, sticky="w")
 token_contract_entry = ttk.Entry(frame_contract, width=40)
-token_contract_entry.pack(side="left", padx=padx, pady=pady)
+token_contract_entry.grid(row=0, column=1, padx=padx, pady=pady)
 
-# --- Sekcja T1 ---
+# Sekcja T1
 frame_t1 = ttk.Labelframe(root, text="T1 (Rozpoczęcie zakupów)")
-frame_t1.pack(padx=padx, pady=pady, fill="x")
+frame_t1.grid(row=2, column=0, padx=padx, pady=pady, sticky="ew")
+frame_t1.grid_columnconfigure(5, weight=0)  # Kolumna z przyciskiem
+frame_t1.grid_columnconfigure(2, weight=1)  # Kolumna z godziną, dla lepszego wyśrodkowania
+frame_t1.grid_columnconfigure(3, weight=1)  # Kolumna z minutami
+frame_t1.grid_columnconfigure(4, weight=1)  # Kolumna z sekundami
+
 T1_date, T1_hour, T1_minute, T1_second = create_datetime_section(frame_t1, "Wybierz T1:", row=0)
+
+# Przyciski kopiowania
 copy_t1_to_t2_t3_button = ttk.Button(
     frame_t1, text="Kopiuj niżej", width=8, style="secondary.TButton",
     command=lambda: [
@@ -151,12 +166,19 @@ copy_t1_to_t2_t3_button = ttk.Button(
         copy_datetime((T1_date, T1_hour, T1_minute, T1_second), (T3_date, T3_hour, T3_minute, T3_second))
     ]
 )
-copy_t1_to_t2_t3_button.pack(side="left", padx=padx, pady=pady)
+copy_t1_to_t2_t3_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="w")  # Przyciski wyśrodkowane
 
-# --- Sekcja T2 ---
+# Sekcja T2
 frame_t2 = ttk.Labelframe(root, text="T2 (Zakończenie zakupów)")
-frame_t2.pack(padx=padx, pady=pady, fill="x")
+frame_t2.grid(row=3, column=0, padx=padx, pady=pady, sticky="ew")
+frame_t2.grid_columnconfigure(5, weight=0)  # Kolumna z przyciskiem
+frame_t2.grid_columnconfigure(2, weight=1)  # Kolumna z godziną
+frame_t2.grid_columnconfigure(3, weight=1)  # Kolumna z minutami
+frame_t2.grid_columnconfigure(4, weight=1)  # Kolumna z sekundami
+
 T2_date, T2_hour, T2_minute, T2_second = create_datetime_section(frame_t2, "Wybierz T2:", row=0)
+
+# Przyciski kopiowania
 copy_t1_to_t2_button = ttk.Button(
     frame_t2, text="Kopiuj z T1", width=8, style="secondary.TButton",
     command=lambda: copy_datetime(
@@ -164,12 +186,19 @@ copy_t1_to_t2_button = ttk.Button(
         (T2_date, T2_hour, T2_minute, T2_second)
     )
 )
-copy_t1_to_t2_button.pack(side="left", padx=padx, pady=pady)
+copy_t1_to_t2_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="w")  # Przyciski wyśrodkowane
 
-# --- Sekcja T3 ---
+# Sekcja T3
 frame_t3 = ttk.Labelframe(root, text="T3 (Data graniczna posiadania tokenów)")
-frame_t3.pack(padx=padx, pady=pady, fill="x")
+frame_t3.grid(row=4, column=0, padx=padx, pady=pady, sticky="ew")
+frame_t3.grid_columnconfigure(5, weight=0)  # Kolumna z przyciskiem
+frame_t3.grid_columnconfigure(2, weight=1)  # Kolumna z godziną
+frame_t3.grid_columnconfigure(3, weight=1)  # Kolumna z minutami
+frame_t3.grid_columnconfigure(4, weight=1)  # Kolumna z sekundami
+
 T3_date, T3_hour, T3_minute, T3_second = create_datetime_section(frame_t3, "Wybierz T3:", row=0)
+
+# Przyciski kopiowania
 copy_t2_to_t3_button = ttk.Button(
     frame_t3, text="Kopiuj z T2", width=8, style="secondary.TButton",
     command=lambda: copy_datetime(
@@ -177,25 +206,26 @@ copy_t2_to_t3_button = ttk.Button(
         (T3_date, T3_hour, T3_minute, T3_second)
     )
 )
-copy_t2_to_t3_button.pack(side="left", padx=padx, pady=pady)
+copy_t2_to_t3_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="w")  # Przyciski wyśrodkowane
+
 
 # --- Wybór sieci i przycisk Uruchom ---
 frame_network = ttk.Frame(root)
-frame_network.pack(fill="x", padx=padx, pady=pady)
-ttk.Label(frame_network, text="Wybierz sieć:").pack(side="left", padx=padx, pady=pady)
+frame_network.grid(row=5, column=0, padx=padx, pady=pady, sticky="ew")
+ttk.Label(frame_network, text="Wybierz sieć:").grid(row=0, column=0, padx=padx, pady=pady, sticky="w")
 network_var = ttk.StringVar()
 network_combo = ttk.Combobox(
     frame_network, textvariable=network_var,
     values=["ETH", "BASE", "BNB"], state="readonly", width=10
 )
-network_combo.pack(side="left", padx=padx, pady=pady)
+network_combo.grid(row=0, column=1, padx=padx, pady=pady, sticky="w")
 network_combo.current(0)
 
 run_button = ttk.Button(
-    root, text="Uruchom", width=20, style="danger.TButton",
+    frame_network, text="Uruchom", width=20, style="danger.TButton",
     command=lambda: save_and_run(log_widget)
 )
-run_button.pack(padx=padx, pady=pady)
+run_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="e")
 
 # --- Wczytanie zapisanej konfiguracji, jeśli istnieje ---
 try:
@@ -218,16 +248,10 @@ try:
                     min_c.set(f"{dt.minute:02d}")
                     sec_c.set(f"{dt.second:02d}")
                 except ValueError:
-                    log_widget.insert(tk.END, f"Błędny format daty dla {key}: {dt_str}\n")
-                    log_widget.yview(tk.END)
-        token_contract_entry.delete(0, 'end')
+                    pass
         token_contract_entry.insert(0, saved_config.get("TOKEN_CONTRACT_ADDRESS", ""))
 except FileNotFoundError:
-    log_widget.insert(tk.END, "Plik config.json nie istnieje. Ustawienia domyślne.\n")
-    log_widget.yview(tk.END)
-except Exception as e:
-    log_widget.insert(tk.END, f"Nieoczekiwany błąd: {e}\n")
-    log_widget.yview(tk.END)
+    pass
 
-# Uruchomienie GUI
+# Uruchomienie aplikacji
 root.mainloop()
