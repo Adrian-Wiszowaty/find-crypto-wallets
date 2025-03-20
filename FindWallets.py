@@ -4,6 +4,8 @@ import time
 import os
 import json
 import logging
+from openpyxl import Workbook
+from openpyxl.styles import Font
 from datetime import datetime, timezone, timedelta
 
 # Funkcja do ładowania konfiguracji z pliku config.json
@@ -433,8 +435,6 @@ def write_excel(filename, header_lines, rows):
     """
     Zapisuje wyniki do pliku Excel (.xlsx) z formatowaniem.
     """
-    from openpyxl import Workbook
-    from openpyxl.styles import Font
 
     wb = Workbook()
     ws = wb.active

@@ -2,6 +2,7 @@ import json
 import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
+from FindWallets import FindWallets
 
 CONFIG_FILE = "config.json"
 
@@ -71,6 +72,9 @@ def save_and_run():
         json.dump(config, f, indent=4)
     
     print("Konfiguracja zapisana w", CONFIG_FILE)
+
+    FindWallets = FindWallets()
+    FindWallets.main()
 
     
 
