@@ -135,9 +135,11 @@ def run_process(log_widget):
         messagebox.showerror("Błąd", f"Coś poszło nie tak: {str(e)}")
     run_button.config(state="normal")
 
-# --- Okno logów na górze ---
+# --- Okno logów na górze z czarnym tłem i białym tekstem ---
 log_widget = Text(root, height=15, width=70)
 log_widget.grid(row=0, column=0, padx=padx, pady=5, columnspan=2, sticky="ew")
+log_widget.config(bg="black", fg="white", insertbackground="white")
+
 # Przekierowanie stdout do widgetu logów
 sys.stdout = LogRedirector(log_widget)
 
