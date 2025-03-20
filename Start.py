@@ -17,11 +17,15 @@ pady = 5
 root = ttk.Window(title="Find Wallets", themename="flatly")
 root.minsize(600, 400)
 root.grid_columnconfigure(0, weight=1, uniform="equal")
+style = ttk.Style()
+style.configure("TCombobox", fieldbackground="white")
+style.map("TCombobox", fieldbackground=[("readonly", "white")])
 
 def create_time_combobox(parent, values):
-    combo = ttk.Combobox(parent, values=values, width=3, state="readonly", bootstyle="info")
+    combo = ttk.Combobox(parent, values=values, width=3, state="readonly", style="TCombobox")
     combo.current(0)
     return combo
+
 
 def create_datetime_section(parent, label_text, row, initial_date=None):
     frame = ttk.Frame(parent)
