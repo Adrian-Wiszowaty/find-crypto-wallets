@@ -4,6 +4,8 @@ import time
 import os
 import json
 import logging
+from openpyxl import Workbook
+from openpyxl.styles import Font
 from datetime import datetime, timezone, timedelta
 
 def load_json_config(config_file="config.json"):
@@ -364,8 +366,6 @@ def get_output_filename():
         suffix += 1
 
 def write_excel(filename, header_lines, rows):
-    from openpyxl import Workbook
-    from openpyxl.styles import Font
 
     wb = Workbook()
     ws = wb.active
