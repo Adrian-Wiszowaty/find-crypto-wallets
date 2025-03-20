@@ -1,6 +1,5 @@
 import json
 import ttkbootstrap as ttk
-import FindWallets
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
 
