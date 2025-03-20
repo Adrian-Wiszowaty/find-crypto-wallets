@@ -1,10 +1,18 @@
 import json
+import os
+import threading
+import sys
+import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
-from FindWallets import FindWallets
+from tkinter import Text, messagebox
+from FindWallets import main as find_wallets_main
+from LogRedirector import LogRedirector
 
 CONFIG_FILE = "config.json"
+padx = 5
+pady = 5
 
 def create_time_combobox(parent, values):
     combo = ttk.Combobox(parent, values=values, width=3, state="readonly", bootstyle="info")
@@ -12,30 +20,42 @@ def create_time_combobox(parent, values):
     return combo
 
 def create_datetime_section(parent, label_text, row, initial_date=None):
-    ttk.Label(parent, text=label_text).grid(row=row, column=0, sticky="e", padx=padx, pady=pady)
+    frame = ttk.Frame(parent)
+    frame.pack(padx=padx, pady=pady, fill="x")
     
-    date_entry = DateEntry(parent, width=12, firstweekday=1, dateformat="%Y-%m-%d", bootstyle="info")
-    date_entry.grid(row=row, column=1, padx=padx, pady=pady)
-
+    ttk.Label(frame, text=label_text).pack(side="left", padx=padx, pady=pady)
+    
+    date_entry = DateEntry(frame, width=12, firstweekday=1, dateformat="%Y-%m-%d", bootstyle="info")
+    date_entry.pack(side="left", padx=padx, pady=pady)
+    
     if initial_date:
         date_entry.entry.delete(0, 'end')
         date_entry.entry.insert(0, initial_date.strftime("%Y-%m-%d"))
-
+        
     hours = [f"{i:02d}" for i in range(24)]
     minutes = [f"{i:02d}" for i in range(60)]
     seconds = [f"{i:02d}" for i in range(60)]
-
-    hour_combo = create_time_combobox(parent, hours)
-    hour_combo.grid(row=row, column=2, padx=padx, pady=pady)
-    minute_combo = create_time_combobox(parent, minutes)
-    minute_combo.grid(row=row, column=3, padx=padx, pady=pady)
-    second_combo = create_time_combobox(parent, seconds)
-    second_combo.grid(row=row, column=4, padx=padx, pady=pady)
-
+    hour_combo = create_time_combobox(frame, hours)
+    hour_combo.pack(side="left", padx=padx, pady=pady)
+    minute_combo = create_time_combobox(frame, minutes)
+    minute_combo.pack(side="left", padx=padx, pady=pady)
+    second_combo = create_time_combobox(frame, seconds)
+    second_combo.pack(side="left", padx=padx, pady=pady)
+    
     return date_entry, hour_combo, minute_combo, second_combo
 
-def save_and_run():
+def copy_datetime(source, target):
+    source_date, source_hour, source_minute, source_second = source
+    target_date, target_hour, target_minute, target_second = target
+    target_date.entry.delete(0, 'end')
+    target_date.entry.insert(0, source_date.entry.get())
+    target_hour.set(source_hour.get())
+    target_minute.set(source_minute.get())
+    target_second.set(source_second.get())
+
+def save_and_run(log_widget):
     network = network_var.get()
+    run_button.config(state="disabled")
     
     def get_datetime(date_entry, hour_combo, minute_combo, second_combo):
         date_str = date_entry.entry.get()
@@ -43,7 +63,6 @@ def save_and_run():
             date = datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
             raise ValueError(f"Invalid date format: {date_str}. Expected format YYYY-MM-DD.")
-        
         hour = int(hour_combo.get())
         minute = int(minute_combo.get())
         second = int(second_combo.get())
@@ -53,7 +72,6 @@ def save_and_run():
     T1_str = get_datetime(T1_date, T1_hour, T1_minute, T1_second)
     T2_str = get_datetime(T2_date, T2_hour, T2_minute, T2_second)
     T3_str = get_datetime(T3_date, T3_hour, T3_minute, T3_second)
-    
     token_contract = token_contract_entry.get().strip()
     
     config = {
@@ -67,78 +85,107 @@ def save_and_run():
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=4)
     
-    print("Konfiguracja zapisana w", CONFIG_FILE)
-
-    FindWallets = FindWallets()
-    FindWallets.main()
-
+    log_widget.insert(tk.END, "Konfiguracja zapisana\n")
+    log_widget.yview(tk.END)
     
+    threading.Thread(target=run_process, args=(log_widget,), daemon=True).start()
+
+def run_process(log_widget):
+    try:
+        find_wallets_main()
+        log_widget.insert(tk.END, "Operacja zakończona pomyślnie!\n")
+        log_widget.yview(tk.END)
+        
+        if os.name == 'nt':
+            import winsound
+            winsound.Beep(1000, 500)
+        else:
+            os.system("afplay /System/Library/Sounds/Pop.aiff")
+        
+        messagebox.showinfo("Sukces", "Operacja zakończona pomyślnie!")
+    except Exception as e:
+        log_widget.insert(tk.END, f"Error: {str(e)}\n")
+        log_widget.yview(tk.END)
+        
+        if os.name == 'nt':
+            import winsound
+            winsound.Beep(200, 500)
+        else:
+            os.system("afplay /System/Library/Sounds/Basso.aiff")
+        
+        messagebox.showerror("Błąd", f"Coś poszło nie tak: {str(e)}")
+    run_button.config(state="normal")
 
 root = ttk.Window(title="Konfiguracja skryptu blockchain", themename="flatly")
 root.minsize(600, 400)
 
-padx = 5
-pady = 5
+log_widget = Text(root, height=15, width=70)
+log_widget.pack(padx=padx, pady=5, fill="x")
+sys.stdout = LogRedirector(log_widget)
 
-ttk.Label(root, text="Adres kontraktu:").grid(row=0, column=0, sticky="e", padx=padx, pady=pady)
-token_contract_entry = ttk.Entry(root, width=40)
-token_contract_entry.grid(row=0, column=1, columnspan=4, padx=padx, pady=pady)
-
-def copy_datetime(source, target):
-    source_date, source_hour, source_minute, source_second = source
-    target_date, target_hour, target_minute, target_second = target
-    
-    target_date.entry.delete(0, 'end')
-    target_date.entry.insert(0, source_date.entry.get())
-    
-    target_hour.set(source_hour.get())
-    target_minute.set(source_minute.get())
-    target_second.set(source_second.get())
+frame_contract = ttk.Frame(root)
+frame_contract.pack(fill="x", padx=padx, pady=pady)
+ttk.Label(frame_contract, text="Adres kontraktu:").pack(side="left", padx=padx, pady=pady)
+token_contract_entry = ttk.Entry(frame_contract, width=40)
+token_contract_entry.pack(side="left", padx=padx, pady=pady)
 
 frame_t1 = ttk.Labelframe(root, text="T1 (Rozpoczęcie zakupów)")
-frame_t1.grid(row=1, column=0, columnspan=5, padx=padx, pady=pady, sticky="ew")
+frame_t1.pack(padx=padx, pady=pady, fill="x")
 T1_date, T1_hour, T1_minute, T1_second = create_datetime_section(frame_t1, "Wybierz T1:", row=0)
-
-copy_t1_to_t2_t3_button = ttk.Button(frame_t1, text="Kopiuj niżej", width=8, style="secondary.TButton", command=lambda: [
-    copy_datetime((T1_date, T1_hour, T1_minute, T1_second), (T2_date, T2_hour, T2_minute, T2_second)),
-    copy_datetime((T1_date, T1_hour, T1_minute, T1_second), (T3_date, T3_hour, T3_minute, T3_second))
-])
-copy_t1_to_t2_t3_button.grid(row=0, column=5, padx=padx, pady=pady)
+copy_t1_to_t2_t3_button = ttk.Button(
+    frame_t1, text="Kopiuj niżej", width=8, style="secondary.TButton",
+    command=lambda: [
+        copy_datetime((T1_date, T1_hour, T1_minute, T1_second), (T2_date, T2_hour, T2_minute, T2_second)),
+        copy_datetime((T1_date, T1_hour, T1_minute, T1_second), (T3_date, T3_hour, T3_minute, T3_second))
+    ]
+)
+copy_t1_to_t2_t3_button.pack(side="left", padx=padx, pady=pady)
 
 frame_t2 = ttk.Labelframe(root, text="T2 (Zakończenie zakupów)")
-frame_t2.grid(row=2, column=0, columnspan=5, padx=padx, pady=pady, sticky="ew")
+frame_t2.pack(padx=padx, pady=pady, fill="x")
 T2_date, T2_hour, T2_minute, T2_second = create_datetime_section(frame_t2, "Wybierz T2:", row=0)
-
-copy_t1_to_t2_button = ttk.Button(frame_t2, text="Kopiuj z T1", width=8, style="secondary.TButton", command=lambda: copy_datetime(
-    (T1_date, T1_hour, T1_minute, T1_second),
-    (T2_date, T2_hour, T2_minute, T2_second)
-))
-copy_t1_to_t2_button.grid(row=0, column=5, padx=padx, pady=pady)
+copy_t1_to_t2_button = ttk.Button(
+    frame_t2, text="Kopiuj z T1", width=8, style="secondary.TButton",
+    command=lambda: copy_datetime(
+        (T1_date, T1_hour, T1_minute, T1_second),
+        (T2_date, T2_hour, T2_minute, T2_second)
+    )
+)
+copy_t1_to_t2_button.pack(side="left", padx=padx, pady=pady)
 
 frame_t3 = ttk.Labelframe(root, text="T3 (Data graniczna posiadania tokenów)")
-frame_t3.grid(row=3, column=0, columnspan=5, padx=padx, pady=pady, sticky="ew")
+frame_t3.pack(padx=padx, pady=pady, fill="x")
 T3_date, T3_hour, T3_minute, T3_second = create_datetime_section(frame_t3, "Wybierz T3:", row=0)
+copy_t2_to_t3_button = ttk.Button(
+    frame_t3, text="Kopiuj z T2", width=8, style="secondary.TButton",
+    command=lambda: copy_datetime(
+        (T2_date, T2_hour, T2_minute, T2_second),
+        (T3_date, T3_hour, T3_minute, T3_second)
+    )
+)
+copy_t2_to_t3_button.pack(side="left", padx=padx, pady=pady)
 
-copy_t2_to_t3_button = ttk.Button(frame_t3, text="Kopiuj z T2", width=8, style="secondary.TButton", command=lambda: copy_datetime(
-    (T2_date, T2_hour, T2_minute, T2_second),
-    (T3_date, T3_hour, T3_minute, T3_second)
-))
-copy_t2_to_t3_button.grid(row=0, column=5, padx=padx, pady=pady)
-
-ttk.Label(root, text="Wybierz sieć:").grid(row=4, column=0, sticky="e", padx=padx, pady=pady)
+frame_network = ttk.Frame(root)
+frame_network.pack(fill="x", padx=padx, pady=pady)
+ttk.Label(frame_network, text="Wybierz sieć:").pack(side="left", padx=padx, pady=pady)
 network_var = ttk.StringVar()
-network_combo = ttk.Combobox(root, textvariable=network_var, values=["ETH", "BASE", "BNB"], state="readonly", width=10)
-network_combo.grid(row=4, column=1, padx=padx, pady=pady, sticky="w")
+network_combo = ttk.Combobox(
+    frame_network, textvariable=network_var,
+    values=["ETH", "BASE", "BNB"], state="readonly", width=10
+)
+network_combo.pack(side="left", padx=padx, pady=pady)
 network_combo.current(0)
 
-run_button = ttk.Button(root, text="Uruchom", width=20, style="danger.TButton", command=save_and_run)
-run_button.grid(row=4, column=2, padx=padx, pady=pady, sticky="w")
+run_button = ttk.Button(
+    root, text="Uruchom", width=20, style="danger.TButton",
+    command=lambda: save_and_run(log_widget)
+)
+run_button.pack(padx=padx, pady=pady)
 
 try:
     with open(CONFIG_FILE, "r") as f:
         saved_config = json.load(f)
         network_var.set(saved_config.get("NETWORK", "ETH"))
-        
         for (date_entry, hour_c, min_c, sec_c), key in zip(
             [(T1_date, T1_hour, T1_minute, T1_second),
              (T2_date, T2_hour, T2_minute, T2_second),
@@ -155,14 +202,15 @@ try:
                     min_c.set(f"{dt.minute:02d}")
                     sec_c.set(f"{dt.second:02d}")
                 except ValueError:
-                    print(f"Invalid date format for {key}: {dt_str}")
-        
+                    log_widget.insert(tk.END, f"Invalid date format for {key}: {dt_str}\n")
+                    log_widget.yview(tk.END)
         token_contract_entry.delete(0, 'end')
         token_contract_entry.insert(0, saved_config.get("TOKEN_CONTRACT_ADDRESS", ""))
-        
 except FileNotFoundError:
-    print("Plik config.json nie istnieje. Ustawienia domyślne.")
+    log_widget.insert(tk.END, "Plik config.json nie istnieje. Ustawienia domyślne.\n")
+    log_widget.yview(tk.END)
 except Exception as e:
-    print("Unexpected error:", e)
+    log_widget.insert(tk.END, f"Unexpected error: {e}\n")
+    log_widget.yview(tk.END)
 
 root.mainloop()
