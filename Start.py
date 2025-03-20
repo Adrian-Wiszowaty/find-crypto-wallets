@@ -14,7 +14,7 @@ CONFIG_FILE = "config.json"
 padx = 5
 pady = 5
 
-root = ttk.Window(title="Konfiguracja skryptu blockchain", themename="flatly")
+root = ttk.Window(title="Find Wallets", themename="flatly")
 root.minsize(600, 400)
 root.grid_columnconfigure(0, weight=1, uniform="equal")
 
@@ -130,11 +130,14 @@ log_widget = Text(root, height=15, width=70)
 log_widget.grid(row=0, column=0, padx=padx, pady=5, columnspan=2, sticky="ew")
 sys.stdout = LogRedirector(log_widget)
 
-frame_contract = ttk.Frame(root)
+frame_contract = ttk.Labelframe(root, text="Token")
 frame_contract.grid(row=1, column=0, padx=padx, pady=pady, sticky="ew")
+frame_contract.grid_columnconfigure(1, weight=1)
+
 ttk.Label(frame_contract, text="Adres kontraktu:").grid(row=0, column=0, padx=padx, pady=pady, sticky="w")
 token_contract_entry = ttk.Entry(frame_contract, width=40)
-token_contract_entry.grid(row=0, column=1, padx=padx, pady=pady)
+token_contract_entry.grid(row=0, column=1, padx=padx, pady=pady, sticky="ew")
+
 
 frame_t1 = ttk.Labelframe(root, text="T1 (Rozpoczęcie zakupów)")
 frame_t1.grid(row=2, column=0, padx=padx, pady=pady, sticky="ew")
@@ -190,9 +193,9 @@ copy_t2_to_t3_button = ttk.Button(
 )
 copy_t2_to_t3_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="w")
 
-
 frame_network = ttk.Frame(root)
 frame_network.grid(row=5, column=0, padx=padx, pady=pady, sticky="ew")
+
 ttk.Label(frame_network, text="Wybierz sieć:").grid(row=0, column=0, padx=padx, pady=pady, sticky="w")
 network_var = ttk.StringVar()
 network_combo = ttk.Combobox(
@@ -202,11 +205,17 @@ network_combo = ttk.Combobox(
 network_combo.grid(row=0, column=1, padx=padx, pady=pady, sticky="w")
 network_combo.current(0)
 
+frame_network.grid_columnconfigure(0, weight=0)
+frame_network.grid_columnconfigure(1, weight=1)
+
 run_button = ttk.Button(
-    frame_network, text="Uruchom", width=20, style="danger.TButton",
+    frame_network, text="Uruchom", width=19, style="danger.TButton", 
     command=lambda: save_and_run(log_widget)
 )
+
 run_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="e")
+
+frame_network.grid_columnconfigure(2, weight=0)
 
 try:
     with open(CONFIG_FILE, "r") as f:
