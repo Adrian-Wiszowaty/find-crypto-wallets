@@ -150,66 +150,71 @@ ttk.Label(frame_contract, text="Adres kontraktu:").grid(row=0, column=0, padx=pa
 token_contract_entry = ttk.Entry(frame_contract, width=40)
 token_contract_entry.grid(row=0, column=1, padx=padx, pady=pady, sticky="ew")
 
-
 # Sekcja T1
 frame_t1 = ttk.Labelframe(root, text="T1 (Rozpoczęcie zakupów)")
 frame_t1.grid(row=2, column=0, padx=padx, pady=pady, sticky="ew")
-frame_t1.grid_columnconfigure(5, weight=0)  # Kolumna z przyciskiem
-frame_t1.grid_columnconfigure(2, weight=1)  # Kolumna z godziną, dla lepszego wyśrodkowania
-frame_t1.grid_columnconfigure(3, weight=1)  # Kolumna z minutami
-frame_t1.grid_columnconfigure(4, weight=1)  # Kolumna z sekundami
+frame_t1.grid_columnconfigure(0, weight=0)  # Kolumna 0 bez wagi
+frame_t1.grid_columnconfigure(1, weight=0)  # Kolumna 1 bez wagi
+frame_t1.grid_columnconfigure(2, weight=0)  # Kolumna 2 bez wagi
+frame_t1.grid_columnconfigure(3, weight=0)  # Kolumna 3 bez wagi
+frame_t1.grid_columnconfigure(4, weight=0)  # Kolumna 4 bez wagi
 
 T1_date, T1_hour, T1_minute, T1_second = create_datetime_section(frame_t1, "Wybierz T1:", row=0)
 
 # Przyciski kopiowania
 copy_t1_to_t2_t3_button = ttk.Button(
-    frame_t1, text="Kopiuj niżej", width=8, style="secondary.TButton",
+    frame_t1, text="Kopiuj niżej", width=17, style="secondary.TButton",  # Stała szerokość
     command=lambda: [
         copy_datetime((T1_date, T1_hour, T1_minute, T1_second), (T2_date, T2_hour, T2_minute, T2_second)),
         copy_datetime((T1_date, T1_hour, T1_minute, T1_second), (T3_date, T3_hour, T3_minute, T3_second))
     ]
 )
-copy_t1_to_t2_t3_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="w")  # Przyciski wyśrodkowane
+copy_t1_to_t2_t3_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="ew", columnspan=2)  # Wyśrodkowanie w kolumnie
+
 
 # Sekcja T2
 frame_t2 = ttk.Labelframe(root, text="T2 (Zakończenie zakupów)")
 frame_t2.grid(row=3, column=0, padx=padx, pady=pady, sticky="ew")
-frame_t2.grid_columnconfigure(5, weight=0)  # Kolumna z przyciskiem
-frame_t2.grid_columnconfigure(2, weight=1)  # Kolumna z godziną
-frame_t2.grid_columnconfigure(3, weight=1)  # Kolumna z minutami
-frame_t2.grid_columnconfigure(4, weight=1)  # Kolumna z sekundami
+frame_t2.grid_columnconfigure(0, weight=0)  # Kolumna 0 bez wagi
+frame_t2.grid_columnconfigure(1, weight=0)  # Kolumna 1 bez wagi
+frame_t2.grid_columnconfigure(2, weight=0)  # Kolumna 2 bez wagi
+frame_t2.grid_columnconfigure(3, weight=0)  # Kolumna 3 bez wagi
+frame_t2.grid_columnconfigure(4, weight=0)  # Kolumna 4 bez wagi
 
 T2_date, T2_hour, T2_minute, T2_second = create_datetime_section(frame_t2, "Wybierz T2:", row=0)
 
 # Przyciski kopiowania
 copy_t1_to_t2_button = ttk.Button(
-    frame_t2, text="Kopiuj z T1", width=8, style="secondary.TButton",
+    frame_t2, text="Kopiuj z T1", width=17, style="secondary.TButton",  # Stała szerokość
     command=lambda: copy_datetime(
         (T1_date, T1_hour, T1_minute, T1_second),
         (T2_date, T2_hour, T2_minute, T2_second)
     )
 )
-copy_t1_to_t2_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="w")  # Przyciski wyśrodkowane
+copy_t1_to_t2_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="ew", columnspan=2)  # Wyśrodkowanie w kolumnie
+
 
 # Sekcja T3
 frame_t3 = ttk.Labelframe(root, text="T3 (Data graniczna posiadania tokenów)")
 frame_t3.grid(row=4, column=0, padx=padx, pady=pady, sticky="ew")
-frame_t3.grid_columnconfigure(5, weight=0)  # Kolumna z przyciskiem
-frame_t3.grid_columnconfigure(2, weight=1)  # Kolumna z godziną
-frame_t3.grid_columnconfigure(3, weight=1)  # Kolumna z minutami
-frame_t3.grid_columnconfigure(4, weight=1)  # Kolumna z sekundami
+frame_t3.grid_columnconfigure(0, weight=0)  # Kolumna 0 bez wagi
+frame_t3.grid_columnconfigure(1, weight=0)  # Kolumna 1 bez wagi
+frame_t3.grid_columnconfigure(2, weight=0)  # Kolumna 2 bez wagi
+frame_t3.grid_columnconfigure(3, weight=0)  # Kolumna 3 bez wagi
+frame_t3.grid_columnconfigure(4, weight=0)  # Kolumna 4 bez wagi
 
 T3_date, T3_hour, T3_minute, T3_second = create_datetime_section(frame_t3, "Wybierz T3:", row=0)
 
 # Przyciski kopiowania
 copy_t2_to_t3_button = ttk.Button(
-    frame_t3, text="Kopiuj z T2", width=8, style="secondary.TButton",
+    frame_t3, text="Kopiuj z T2", width=17, style="secondary.TButton",  # Stała szerokość
     command=lambda: copy_datetime(
         (T2_date, T2_hour, T2_minute, T2_second),
         (T3_date, T3_hour, T3_minute, T3_second)
     )
 )
-copy_t2_to_t3_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="w")  # Przyciski wyśrodkowane
+copy_t2_to_t3_button.grid(row=0, column=2, padx=padx, pady=pady, sticky="ew", columnspan=2)  # Wyśrodkowanie w kolumnie
+
 
 # Sekcja Wybór sieci
 frame_network = ttk.Frame(root)
@@ -220,7 +225,7 @@ ttk.Label(frame_network, text="Wybierz sieć:").grid(row=0, column=0, padx=padx,
 network_var = ttk.StringVar()
 network_combo = ttk.Combobox(
     frame_network, textvariable=network_var,
-    values=["ETH", "BASE", "BNB"], state="readonly", width=10
+    values=["ETH", "BASE", "BNB"], state="readonly", width=13
 )
 network_combo.grid(row=0, column=1, padx=padx, pady=pady, sticky="w")
 network_combo.current(0)
@@ -231,7 +236,7 @@ frame_network.grid_columnconfigure(1, weight=1)  # Combobox rośnie
 
 # Kolumna z przyciskiem "Uruchom"
 run_button = ttk.Button(
-    frame_network, text="Uruchom", width=19, style="danger.TButton", 
+    frame_network, text="Uruchom", width=39, style="danger.TButton", 
     command=lambda: save_and_run(log_widget)
 )
 
