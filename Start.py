@@ -108,31 +108,42 @@ def save_and_run(log_widget):
     
     threading.Thread(target=run_process, args=(log_widget,), daemon=True).start()
 
+def play_sound(success=True):
+    if os.name == 'nt':
+        import winsound
+        freq, dur = (1000, 500) if success else (200, 500)
+        winsound.Beep(freq, dur)
+    else:
+        sound_file = "/System/Library/Sounds/Pop.aiff" if success else "/System/Library/Sounds/Basso.aiff"
+        os.system(f"afplay {sound_file}")
+
+def show_message(success=True, error_msg=""):
+    threading.Thread(target=play_sound, args=(success,), daemon=True).start()
+    if success:
+        messagebox.showinfo("Sukces", "Operacja zakończona pomyślnie!")
+    else:
+        messagebox.showerror("Błąd", f"Coś poszło nie tak: {error_msg}")
+
 def run_process(log_widget):
     try:
+        run_button.config(state="disabled")
+
         find_wallets_main()
+
         log_widget.insert(tk.END, "Operacja zakończona pomyślnie!\n")
         log_widget.yview(tk.END)
-        
-        if os.name == 'nt':
-            import winsound
-            winsound.Beep(1000, 500)
-        else:
-            os.system("afplay /System/Library/Sounds/Pop.aiff")
-        
-        messagebox.showinfo("Sukces", "Operacja zakończona pomyślnie!")
+
+        show_message(success=True)
     except Exception as e:
         log_widget.insert(tk.END, f"Error: {str(e)}\n")
         log_widget.yview(tk.END)
-        
-        if os.name == 'nt':
-            import winsound
-            winsound.Beep(200, 500)
-        else:
-            os.system("afplay /System/Library/Sounds/Basso.aiff")
-        
-        messagebox.showerror("Błąd", f"Coś poszło nie tak: {str(e)}")
+
+        show_message(success=False, error_msg=str(e))
+    
     run_button.config(state="normal")
+
+def start_process_thread(log_widget, run_button):
+    threading.Thread(target=run_process, args=(log_widget, run_button), daemon=True).start()
 
 log_widget = Text(root, height=15, width=70)
 log_widget.grid(row=0, column=0, padx=padx, pady=5, columnspan=2, sticky="ew")
