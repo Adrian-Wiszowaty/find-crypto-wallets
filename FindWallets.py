@@ -68,8 +68,9 @@ DELAY_BETWEEN_REQUESTS = 0.2
 MAX_RETRIES = 3
 MIN_USD_VALUE = 100.0  # Minimalna wartość w USD
 WALLETS_FOLDER = "Wallets"
+CACHE_FOLDER = "Cache"
 LOGS_FOLDER = "Logs"
-CACHE_FILE = os.path.join(WALLETS_FOLDER, "wallet_frequency_cache.json")
+CACHE_FILE = os.path.join(CACHE_FOLDER, "wallet_frequency_cache.json")
 DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
 
 # Adres natywnego tokena: dla BSC był WBNB, dla ETH i BASE będzie WETH – tutaj osobno definiujemy
@@ -92,6 +93,7 @@ LOG_FILE = os.path.join(LOGS_FOLDER, "error_log.txt")
 # ================================ UTWORZENIE FOLDERÓW ================================
 os.makedirs(WALLETS_FOLDER, exist_ok=True)
 os.makedirs(LOGS_FOLDER, exist_ok=True)
+os.makedirs(CACHE_FOLDER, exist_ok=True)
 
 # =============================================================================
 # Funkcja pomocnicza do podziału zakresu bloków na paczki
@@ -360,6 +362,7 @@ def frequency_check(wallet, wallet_txs, cache):
             violations += 1
     
     if violations >= MIN_FREQ_VIOLATIONS:
+        cache[wallet] = True
         return False  # Portfel odrzucony
     
     return True  # Portfel akceptowany
@@ -383,6 +386,7 @@ def frequency_check_wallet(wallet, cache):
             violations += 1
 
     if violations >= MIN_FREQ_VIOLATIONS:
+        cache[wallet] = True
         return False
 
     return True
@@ -415,7 +419,7 @@ def simulate_wallet_balance(wallet, wallet_txs, t1_unix, t2_unix, t3_unix):
                 balance -= amount
                 sale_count += 1
 
-    return purchased, balance, purchase_count, sale_count
+    return round(purchased, 2), round(balance, 2), purchase_count, sale_count
 
 def get_output_filename():
     """
@@ -563,14 +567,14 @@ def main():
                 continue
             
             if exchange_rate != "error" and native_to_usd_rate != "error":
-                native_value = final_balance * exchange_rate
-                usd_value = native_value * native_to_usd_rate
+                native_value = round(final_balance * exchange_rate, 2)
+                usd_value = round(native_value * native_to_usd_rate, 2)
             else:
                 native_value = "error"
                 usd_value = "error"
             
             if usd_value != "error" and usd_value < MIN_USD_VALUE:
-                print(f"Portfel {wallet} odrzucony z powodu niskiej wartości w USD: {usd_value}")
+                print(f"Portfel {wallet} odrzucony ({usd_value} USD < {MIN_USD_VALUE} USD).")
                 continue
             
             final_results.append({

@@ -1,0 +1,3 @@
+([('MojaAplikacja',
+   '/Users/wiszu/Documents/FindWallets/dist/MojaAplikacja',
+   'EXECUTABLE')],)
