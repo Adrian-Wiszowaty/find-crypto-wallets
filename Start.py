@@ -128,6 +128,8 @@ def run_process(log_widget):
 
 log_widget = Text(root, height=15, width=70)
 log_widget.grid(row=0, column=0, padx=padx, pady=5, columnspan=2, sticky="ew")
+log_widget.config(bg="black", fg="white", insertbackground="white")
+
 sys.stdout = LogRedirector(log_widget)
 
 frame_contract = ttk.Labelframe(root, text="Token")
