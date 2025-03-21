@@ -1,17 +1,16 @@
 import json
 import os
-os.environ["TK_SILENCE_DEPRECATION"] = "1"
 import threading
 import sys
 import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
-from tkinter import Text,  messagebox
+from tkinter import Text, messagebox
 from Main import main
 from LogRedirector import LogRedirector
 from ttkbootstrap.window import Icon
-import os
+from tkinter import PhotoImage  # Importowanie PhotoImage dla pliku PNG
 
 # Ścieżka do katalogu, w którym znajduje się aktualny skrypt
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,18 +25,26 @@ pady = 5
 # ======================= GŁÓWNE OKNO APLIKACJI =======================
 minimal_gif = "R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
 
-Icon.icon = minimal_gif
+# Utworzenie okna aplikacji
 root = ttk.Window(title="Find Wallets", themename="flatly")
+
+# Dodanie ikony
+icon_path = os.path.join(BASE_DIR, "twoja_ikona.png")  # Zaktualizuj ścieżkę do pliku PNG
+if os.path.exists(icon_path):
+    icon_image = PhotoImage(file=icon_path)
+    root.iconphoto(True, icon_image)  # Ustawienie ikony dla aplikacji
+else:
+    print("Plik ikony nie został znaleziony!")
+
 root.minsize(600, 400)
 root.grid_columnconfigure(0, weight=1, uniform="equal")  # Sprawia, że kolumna 0 (gdzie znajdują się widgety) jest elastyczna
+
 style = ttk.Style()
 style.configure("info.TCombobox",
                 fieldbackground="white",
                 bordercolor=style.colors.info,
                 arrowcolor=style.colors.info)
 style.map("info.TCombobox", fieldbackground=[("readonly", "white")])
-
-
 
 # ======================= FUNKCJE POMOCNICZE =======================
 def create_time_combobox(parent, values):
