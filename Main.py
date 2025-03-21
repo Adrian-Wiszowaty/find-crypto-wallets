@@ -243,6 +243,7 @@ def get_exchange_rate(token_address, retries=5):
         try:
             url = DEX_API_URL.format(token_address.lower())
             response = requests.get(url, timeout=10)
+            print(f"Odpowiedź: {response}")
             
             if response.status_code != 200:
                 logging.error(f"Odpowiedź serwera dla tokena: {response.status_code}, treść: {response.text}")
@@ -490,7 +491,7 @@ start_time = time.time()  # Zapisujemy czas startu
 
 def main():
     try:
-        global NETWORK, T1_STR, T2_STR, T3_STR, TOKEN_CONTRACT_ADDRESS, API_URL, API_KEY_USED
+        global NETWORK, T1_STR, T2_STR, T3_STR, TOKEN_CONTRACT_ADDRESS, API_URL, API_KEY_USED, WETH_ADDRESS, NATIVE_TOKEN_FULL_NAME, WBNB_ADDRESS
         # Wczytujemy aktualną konfigurację
         config = load_json_config()
         NETWORK = config.get("NETWORK", "ETH")
@@ -512,6 +513,20 @@ def main():
             API_URL = API_URL_BASE
         else:
             raise Exception(f"Nieobsługiwana sieć: {NETWORK}")
+        
+        if NETWORK == "BASE":
+            BASE_NATIVE_ADDRESS = "0x4200000000000000000000000000000000000006"
+            WETH_ADDRESS = BASE_NATIVE_ADDRESS  # BASE używa tego samego adresu co WETH
+            NATIVE_TOKEN_NAME = "ETH"
+            NATIVE_TOKEN_FULL_NAME = "ethereum"
+        elif NETWORK == "ETH":
+            WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+            NATIVE_TOKEN_NAME = "ETH"
+            NATIVE_TOKEN_FULL_NAME = "ethereum"
+        else:  # BSC
+            WBNB_ADDRESS = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+            NATIVE_TOKEN_NAME = "BNB"
+            NATIVE_TOKEN_FULL_NAME = "binancecoin"
 
         
         print(f"Wybrana sieć: {NETWORK}")
