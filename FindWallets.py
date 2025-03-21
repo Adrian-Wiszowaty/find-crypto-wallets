@@ -8,8 +8,23 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from datetime import datetime, timezone, timedelta
 
+# Stałe dotyczące pozostałych ustawień
+BLOCK_CHUNK_SIZE = 1200
+FREQUENCY_INTERVAL_SECONDS = 60
+MIN_FREQ_VIOLATIONS = 5
+MIN_TX_COUNT = 10
+DELAY_BETWEEN_REQUESTS = 0.2
+MAX_RETRIES = 3
+MIN_USD_VALUE = 100.0  # Minimalna wartość w USD
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WALLETS_FOLDER = os.path.join(BASE_DIR, "Wallets")
+CACHE_FOLDER = os.path.join(BASE_DIR, "Cache")
+LOGS_FOLDER = os.path.join(BASE_DIR, "Logs")
+CACHE_FILE = os.path.join(CACHE_FOLDER, "wallet_frequency_cache.json")
+DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
+
 # Funkcja do ładowania konfiguracji z pliku config.json
-def load_json_config(config_file="config.json"):
+def load_json_config(config_file=os.path.join(BASE_DIR, "config.json")):
     """
     Ładuje konfigurację z pliku config.json. Jeśli plik nie istnieje, wyświetla komunikat
     i zwraca pusty słownik.
@@ -58,20 +73,6 @@ elif NETWORK == "BASE":
     API_URL = API_URL_BASE
 else:
     raise Exception(f"Nieobsługiwana sieć: {NETWORK}")
-
-# Stałe dotyczące pozostałych ustawień
-BLOCK_CHUNK_SIZE = 1200
-FREQUENCY_INTERVAL_SECONDS = 60
-MIN_FREQ_VIOLATIONS = 5
-MIN_TX_COUNT = 10
-DELAY_BETWEEN_REQUESTS = 0.2
-MAX_RETRIES = 3
-MIN_USD_VALUE = 100.0  # Minimalna wartość w USD
-WALLETS_FOLDER = "Wallets"
-CACHE_FOLDER = "Cache"
-LOGS_FOLDER = "Logs"
-CACHE_FILE = os.path.join(CACHE_FOLDER, "wallet_frequency_cache.json")
-DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
 
 # Adres natywnego tokena: dla BSC był WBNB, dla ETH i BASE będzie WETH – tutaj osobno definiujemy
 if NETWORK == "BASE":
