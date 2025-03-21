@@ -21,6 +21,9 @@ CACHE_FOLDER = os.path.join(BASE_DIR, "Cache")
 LOGS_FOLDER = os.path.join(BASE_DIR, "Logs")
 CACHE_FILE = os.path.join(CACHE_FOLDER, "wallet_frequency_cache.json")
 DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
+API_KEY_USED = ""
+API_URL = ""
+
 
 def load_json_config(config_file=os.path.join(BASE_DIR, "config/config.json")):
     try:
@@ -417,6 +420,27 @@ start_time = time.time()
 
 def main():
     try:
+        global NETWORK, T1_STR, T2_STR, T3_STR, TOKEN_CONTRACT_ADDRESS, API_URL, API_KEY_USED
+        config = load_json_config()
+        NETWORK = config.get("NETWORK", "ETH")
+        T1_STR = config.get("T1_STR", "17-03-2025 22:25:00")
+        T2_STR = config.get("T2_STR", "18-03-2025 19:30:00")
+        T3_STR = config.get("T3_STR", "19-03-2025 20:00:00")
+        TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B189c27678C0f551c08c01D150")
+        
+        if NETWORK == "BSC":
+            API_KEY_USED = API_KEY_BSC
+            API_URL = API_URL_BSC
+        elif NETWORK == "ETH":
+            API_KEY_USED = API_KEY_ETH
+            API_URL = API_URL_ETH
+        elif NETWORK == "BASE":
+            API_KEY_USED = API_KEY_BASE
+            API_URL = API_URL_BASE
+        else:
+            raise Exception(f"Unsupported network: {NETWORK}")
+
+        
         print(f"Wybrana sieć: {NETWORK}")
         print("Rozpoczynam działanie skryptu...")
         t1_unix = parse_date(T1_STR)
