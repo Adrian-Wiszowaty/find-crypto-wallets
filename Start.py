@@ -29,7 +29,7 @@ minimal_gif = "R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
 root = ttk.Window(title="Find Wallets", themename="flatly")
 
 # Dodanie ikony
-icon_path = os.path.join(BASE_DIR, "twoja_ikona.png")  # Zaktualizuj ścieżkę do pliku PNG
+icon_path = os.path.join(BASE_DIR, "images/twoja_ikona.png")  # Zaktualizuj ścieżkę do pliku PNG
 if os.path.exists(icon_path):
     icon_image = PhotoImage(file=icon_path)
     root.iconphoto(True, icon_image)  # Ustawienie ikony dla aplikacji
