@@ -23,7 +23,7 @@ minimal_gif = "R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
 
 root = ttk.Window(title="Find Wallets", themename="flatly")
 
-icon_path = os.path.join(BASE_DIR, "icon.png")
+icon_path = os.path.join(BASE_DIR, "images/icon.png")
 if os.path.exists(icon_path):
     icon_image = PhotoImage(file=icon_path)
     root.iconphoto(True, icon_image)
