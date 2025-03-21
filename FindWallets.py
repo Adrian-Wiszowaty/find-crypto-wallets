@@ -8,7 +8,21 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from datetime import datetime, timezone, timedelta
 
-def load_json_config(config_file="config.json"):
+BLOCK_CHUNK_SIZE = 1200
+FREQUENCY_INTERVAL_SECONDS = 60
+MIN_FREQ_VIOLATIONS = 5
+MIN_TX_COUNT = 10
+DELAY_BETWEEN_REQUESTS = 0.2
+MAX_RETRIES = 3
+MIN_USD_VALUE = 100.0
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WALLETS_FOLDER = os.path.join(BASE_DIR, "Wallets")
+CACHE_FOLDER = os.path.join(BASE_DIR, "Cache")
+LOGS_FOLDER = os.path.join(BASE_DIR, "Logs")
+CACHE_FILE = os.path.join(CACHE_FOLDER, "wallet_frequency_cache.json")
+DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
+
+def load_json_config(config_file=os.path.join(BASE_DIR, "config.json")):
     try:
         with open(config_file, "r") as f:
             return json.load(f)
@@ -45,19 +59,6 @@ elif NETWORK == "BASE":
     API_URL = API_URL_BASE
 else:
     raise Exception(f"Unsupported network: {NETWORK}")
-
-BLOCK_CHUNK_SIZE = 1200
-FREQUENCY_INTERVAL_SECONDS = 60
-MIN_FREQ_VIOLATIONS = 5
-MIN_TX_COUNT = 10
-DELAY_BETWEEN_REQUESTS = 0.2
-MAX_RETRIES = 3
-MIN_USD_VALUE = 100.0
-WALLETS_FOLDER = "Wallets"
-CACHE_FOLDER = "Cache"
-LOGS_FOLDER = "Logs"
-CACHE_FILE = os.path.join(CACHE_FOLDER, "wallet_frequency_cache.json")
-DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
 
 if NETWORK == "BASE":
     BASE_NATIVE_ADDRESS = "0x4200000000000000000000000000000000000006"
