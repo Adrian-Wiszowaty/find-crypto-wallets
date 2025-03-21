@@ -8,7 +8,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
 from tkinter import Text,  messagebox
-from FindWallets import main as find_wallets_main
+from Main import main
 from LogRedirector import LogRedirector
 from ttkbootstrap.window import Icon
 import os
@@ -17,7 +17,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Utworzenie ścieżki do config.json w tym samym katalogu co skrypt
-CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
+CONFIG_FILE = os.path.join(BASE_DIR, "config/config.json")
 
 # ======================= KONFIGURACJA =======================
 padx = 5
@@ -149,8 +149,7 @@ def run_process(log_widget):
         # Wyłączenie przycisku, aby zapobiec ponownemu kliknięciu
         run_button.config(state="disabled")
 
-        # Uruchomienie funkcji main z FindWallets
-        find_wallets_main()
+        main()
 
         log_widget.insert(tk.END, "Operacja zakończona pomyślnie!\n")
         log_widget.yview(tk.END)
@@ -261,7 +260,7 @@ ttk.Label(frame_network, text="Wybierz sieć:").grid(row=0, column=0, padx=padx,
 network_var = ttk.StringVar()
 network_combo = ttk.Combobox(
     frame_network, textvariable=network_var,
-    values=["ETH", "BASE", "BNB"], state="readonly", width=13
+    values=["ETH", "BASE", "BSC"], state="readonly", width=13
 )
 network_combo.grid(row=0, column=1, padx=padx, pady=pady, sticky="w")
 network_combo.current(0)

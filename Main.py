@@ -24,7 +24,7 @@ CACHE_FILE = os.path.join(CACHE_FOLDER, "wallet_frequency_cache.json")
 DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
 
 # Funkcja do ładowania konfiguracji z pliku config.json
-def load_json_config(config_file=os.path.join(BASE_DIR, "config.json")):
+def load_json_config(config_file=os.path.join(BASE_DIR, "config/config.json")):
     """
     Ładuje konfigurację z pliku config.json. Jeśli plik nie istnieje, wyświetla komunikat
     i zwraca pusty słownik.

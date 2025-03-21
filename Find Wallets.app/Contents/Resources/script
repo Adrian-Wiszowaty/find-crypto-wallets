@@ -1,0 +1,5 @@
+export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+export PYTHONPATH="/Users/wiszu/Library/Python/3.13/lib/python/site-packages:$PYTHONPATH"
+
+# Uruchomienie skryptu
+/usr/local/bin/python3 /Users/wiszu/Documents/FindWallets/Start.py
