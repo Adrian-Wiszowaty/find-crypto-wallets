@@ -1,17 +1,16 @@
 import json
 import os
-os.environ["TK_SILENCE_DEPRECATION"] = "1"
 import threading
 import sys
 import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
-from tkinter import Text,  messagebox
+from tkinter import Text, messagebox
 from Main import main
 from LogRedirector import LogRedirector
 from ttkbootstrap.window import Icon
-import os
+from tkinter import PhotoImage
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -22,18 +21,24 @@ pady = 5
 
 minimal_gif = "R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
 
-Icon.icon = minimal_gif
 root = ttk.Window(title="Find Wallets", themename="flatly")
+
+icon_path = os.path.join(BASE_DIR, "icon.png")
+if os.path.exists(icon_path):
+    icon_image = PhotoImage(file=icon_path)
+    root.iconphoto(True, icon_image)
+else:
+    print("Icon file not found!")
+
 root.minsize(600, 400)
 root.grid_columnconfigure(0, weight=1, uniform="equal")
+
 style = ttk.Style()
 style.configure("info.TCombobox",
                 fieldbackground="white",
                 bordercolor=style.colors.info,
                 arrowcolor=style.colors.info)
 style.map("info.TCombobox", fieldbackground=[("readonly", "white")])
-
-
 
 def create_time_combobox(parent, values):
     combo = ttk.Combobox(parent, values=values, width=3, state="readonly", style="info.TCombobox")
