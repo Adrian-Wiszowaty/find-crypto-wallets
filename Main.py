@@ -22,7 +22,7 @@ LOGS_FOLDER = os.path.join(BASE_DIR, "Logs")
 CACHE_FILE = os.path.join(CACHE_FOLDER, "wallet_frequency_cache.json")
 DEX_API_URL = "https://api.dexscreener.com/latest/dex/tokens/{}"
 
-def load_json_config(config_file=os.path.join(BASE_DIR, "config.json")):
+def load_json_config(config_file=os.path.join(BASE_DIR, "config/config.json")):
     try:
         with open(config_file, "r") as f:
             return json.load(f)
