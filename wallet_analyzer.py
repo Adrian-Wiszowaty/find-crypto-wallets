@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple, Any, Optional
 from datetime import datetime, timezone, timedelta
 from config_manager import ConfigManager
 from api_client import ApiClient
+from constants import Constants
 
 
 class WalletAnalyzer:
@@ -12,10 +13,10 @@ class WalletAnalyzer:
     def __init__(self, config_manager: ConfigManager, api_client: ApiClient):
         self.config_manager = config_manager
         self.api_client = api_client
-        self.frequency_interval_seconds = 60
-        self.min_frequency_violations = 5
-        self.min_transaction_count = 10
-        self.min_usd_value = 100.0
+        self.frequency_interval_seconds = Constants.FREQUENCY_INTERVAL_SECONDS
+        self.min_frequency_violations = Constants.MIN_FREQUENCY_VIOLATIONS
+        self.min_transaction_count = Constants.MIN_TRANSACTION_COUNT
+        self.min_usd_value = Constants.MIN_USD_VALUE
         
         paths = config_manager.get_paths_config()
         self.cache_file = paths["cache_file"]
@@ -41,12 +42,12 @@ class WalletAnalyzer:
     
     def parse_date(self, date_str: str) -> int:
         try:
-            dt = datetime.strptime(date_str, "%d-%m-%Y %H:%M:%S")
-            dt = dt - timedelta(hours=1)
+            dt = datetime.strptime(date_str, Constants.DATE_FORMAT)
+            dt = dt - timedelta(hours=Constants.TIMEZONE_OFFSET_HOURS)
             dt = dt.replace(tzinfo=timezone.utc)
             return int(dt.timestamp())
         except Exception as e:
-            logging.error(f"Error parsing date {date_str}: {e}")
+            logging.error(f"{Constants.ERROR_INVALID_DATE_FORMAT} {date_str}: {e}")
             raise
     
     def _check_transaction_frequency(self, transactions: List[Dict[str, Any]]) -> bool:
@@ -195,3 +196,72 @@ class WalletAnalyzer:
                 candidate_wallets.add(wallet_to)
         
         return list(candidate_wallets), wallet_transactions
+    
+    def filter_wallets_by_frequency(self, candidate_wallets: List[str], 
+                                   wallet_transactions: Dict[str, List[Dict[str, Any]]],
+                                   blockchain_analyzer) -> List[str]:
+        filtered_wallets = []
+        total_wallets = len(candidate_wallets)
+        
+        for index, wallet in enumerate(candidate_wallets, start=1):
+            print(f"{index}/{total_wallets}: {wallet}")
+            
+            if wallet in self.frequency_cache:
+                print(f"Portfel {wallet} odrzucony (był w cache).")
+                continue
+            
+            txs = wallet_transactions.get(wallet, [])
+            if not self.check_wallet_token_frequency(wallet, txs):
+                print(f"Portfel {wallet} odrzucony (częste transakcje tokena).")
+                continue
+            
+            if not self.check_wallet_general_frequency(wallet):
+                print(f"Portfel {wallet} odrzucony (częste transakcje pełne).")
+                continue
+            
+            filtered_wallets.append(wallet)
+        
+        return filtered_wallets
+    
+    def analyze_wallet_balances(self, wallets: List[str], 
+                               wallet_transactions: Dict[str, List[Dict[str, Any]]],
+                               t1_unix: int, t2_unix: int, t3_unix: int,
+                               exchange_rate, native_to_usd_rate) -> List[Dict[str, Any]]:
+        results = []
+        
+        for wallet in wallets:
+            txs = wallet_transactions.get(wallet, [])
+            purchased, final_balance, purchase_count, sale_count = self.simulate_wallet_balance(
+                wallet, txs, t1_unix, t2_unix, t3_unix
+            )
+            
+            if purchased == 0:
+                continue
+                
+            percentage = (final_balance / purchased) * 100
+            if final_balance < 0.5 * purchased:
+                continue
+            
+            if exchange_rate != "error" and native_to_usd_rate != "error":
+                native_value = round(final_balance * exchange_rate, 2)
+                usd_value = round(native_value * native_to_usd_rate, 2)
+            else:
+                native_value = "error"
+                usd_value = "error"
+            
+            if usd_value != "error" and usd_value < Constants.MIN_USD_VALUE:
+                print(f"Portfel {wallet} odrzucony ({usd_value} USD < {Constants.MIN_USD_VALUE} USD).")
+                continue
+            
+            results.append({
+                "wallet": wallet,
+                "purchase_count": purchase_count,
+                "sale_count": sale_count,
+                "percentage": f"{percentage:.2f}%",
+                "native_value": native_value,
+                "usd_value": usd_value,
+                "purchased": purchased,
+                "final_balance": final_balance,
+            })
+        
+        return results

@@ -3,13 +3,14 @@ import os
 from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
+from constants import Constants
 
 
 class ConfigManager:
     
     def __init__(self, config_file: Optional[str] = None):
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.config_file = config_file or os.path.join(self.base_dir, "config", "config.json")
+        self.config_file = config_file or os.path.join(self.base_dir, Constants.FOLDER_CONFIG, Constants.FILE_CONFIG)
         self.config = self._load_config()
         
     def _load_config(self) -> Dict[str, Any]:
@@ -46,39 +47,11 @@ class ConfigManager:
         self.config[key] = value
     
     def get_network_config(self) -> Dict[str, str]:
-        network = self.get("NETWORK", "ETH")
-        
-        network_configs = {
-            "BSC": {
-                "api_url": "https://api.etherscan.io/v2/api?chainid=56",
-                "chain_id": 56,
-                "native_token_name": "BNB",
-                "native_token_full_name": "binancecoin",
-                "native_address": "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
-            },
-            "ETH": {
-                "api_url": "https://api.etherscan.io/v2/api?chainid=1",
-                "chain_id": 1,
-                "native_token_name": "ETH",
-                "native_token_full_name": "ethereum",
-                "native_address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-            },
-            "BASE": {
-                "api_url": "https://api.etherscan.io/v2/api?chainid=8453",
-                "chain_id": 8453,
-                "native_token_name": "ETH",
-                "native_token_full_name": "ethereum",
-                "native_address": "0x4200000000000000000000000000000000000006"
-            }
-        }
-        
-        if network not in network_configs:
-            raise ValueError(f"Unsupported network: {network}")
-        
-        return network_configs[network]
+        network = self.get("NETWORK", Constants.DEFAULT_CONFIG["NETWORK"])
+        return Constants.get_network_config(network)
     
     def validate_config(self) -> bool:
-        required_fields = ["NETWORK", "T1_STR", "T2_STR", "T3_STR", "TOKEN_CONTRACT_ADDRESS"]
+        required_fields = list(Constants.DEFAULT_CONFIG.keys())
         
         for field in required_fields:
             if not self.get(field):
@@ -88,15 +61,14 @@ class ConfigManager:
         date_fields = ["T1_STR", "T2_STR", "T3_STR"]
         for field in date_fields:
             try:
-                datetime.strptime(self.get(field), "%d-%m-%Y %H:%M:%S")
+                datetime.strptime(self.get(field), Constants.DATE_FORMAT)
             except ValueError:
                 logging.error(f"Invalid date format in field {field}")
                 return False
         
-        available_networks = self.get_available_networks()
-        if self.get("NETWORK") not in available_networks:
-            available_list = list(available_networks.keys())
-            logging.error(f"Unsupported network: {self.get('NETWORK')}. Available: {available_list}")
+        supported_networks = Constants.get_supported_networks()
+        if self.get("NETWORK") not in supported_networks:
+            logging.error(f"{Constants.ERROR_UNSUPPORTED_NETWORK}: {self.get('NETWORK')}. Available: {supported_networks}")
             return False
         
         return True
@@ -104,11 +76,11 @@ class ConfigManager:
     def get_paths_config(self) -> Dict[str, str]:
         return {
             "base_dir": self.base_dir,
-            "wallets_folder": os.path.join(self.base_dir, "Wallets"),
-            "cache_folder": os.path.join(self.base_dir, "Cache"),
-            "logs_folder": os.path.join(self.base_dir, "Logs"),
-            "cache_file": os.path.join(self.base_dir, "Cache", "wallet_frequency_cache.json"),
-            "log_file": os.path.join(self.base_dir, "Logs", "error_log.txt")
+            "wallets_folder": os.path.join(self.base_dir, Constants.FOLDER_WALLETS),
+            "cache_folder": os.path.join(self.base_dir, Constants.FOLDER_CACHE),
+            "logs_folder": os.path.join(self.base_dir, Constants.FOLDER_LOGS),
+            "cache_file": os.path.join(self.base_dir, Constants.FOLDER_CACHE, Constants.FILE_WALLET_CACHE),
+            "log_file": os.path.join(self.base_dir, Constants.FOLDER_LOGS, Constants.FILE_ERROR_LOG)
         }
     
     def ensure_directories(self) -> None:

@@ -1,0 +1,126 @@
+import json
+import os
+import logging
+from typing import Dict, Any, Optional
+from config_manager import ConfigManager
+
+
+class CacheManager:
+    
+    def __init__(self, config_manager: ConfigManager):
+        self.config_manager = config_manager
+        paths = config_manager.get_paths_config()
+        
+        self.cache_folder = paths["cache_folder"]
+        self.frequency_cache_file = paths["cache_file"]
+        
+        os.makedirs(self.cache_folder, exist_ok=True)
+    
+    def load_frequency_cache(self) -> Dict[str, bool]:
+        if os.path.exists(self.frequency_cache_file):
+            try:
+                with open(self.frequency_cache_file, "r") as f:
+                    cache_data = json.load(f)
+                    logging.info(f"Loaded frequency cache: {len(cache_data)} entries")
+                    return cache_data
+            except (json.JSONDecodeError, IOError) as e:
+                logging.error(f"Error loading cache from {self.frequency_cache_file}: {e}")
+                return {}
+        else:
+            logging.info("Frequency cache file does not exist, creating a new one")
+            return {}
+    
+    def save_frequency_cache(self, cache: Dict[str, bool]) -> None:
+        try:
+            with open(self.frequency_cache_file, "w") as f:
+                json.dump(cache, f, indent=2)
+            logging.info(f"Saved frequency cache: {len(cache)} entries")
+        except (IOError, json.JSONEncodeError) as e:
+            logging.error(f"Error saving cache to {self.frequency_cache_file}: {e}")
+    
+    def load_generic_cache(self, cache_filename: str) -> Dict[str, Any]:
+        cache_path = os.path.join(self.cache_folder, cache_filename)
+        
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r") as f:
+                    cache_data = json.load(f)
+                    logging.info(f"Loaded cache {cache_filename}: {len(cache_data)} entries")
+                    return cache_data
+            except (json.JSONDecodeError, IOError) as e:
+                logging.error(f"Error loading cache from {cache_path}: {e}")
+                return {}
+        else:
+            logging.info(f"Plik cache {cache_filename} nie istnieje")
+            return {}
+    
+    def save_generic_cache(self, cache: Dict[str, Any], cache_filename: str) -> None:
+        cache_path = os.path.join(self.cache_folder, cache_filename)
+        
+        try:
+            with open(cache_path, "w") as f:
+                json.dump(cache, f, indent=2, ensure_ascii=False)
+            logging.info(f"Saved cache {cache_filename}: {len(cache)} entries")
+        except (IOError, json.JSONEncodeError) as e:
+            logging.error(f"Error saving cache to {cache_path}: {e}")
+    
+    def clear_cache(self, cache_filename: Optional[str] = None) -> None:
+        if cache_filename:
+            cache_path = os.path.join(self.cache_folder, cache_filename)
+            if os.path.exists(cache_path):
+                try:
+                    os.remove(cache_path)
+                    logging.info(f"Removed cache file: {cache_filename}")
+                except OSError as e:
+                    logging.error(f"Error removing cache {cache_filename}: {e}")
+            else:
+                logging.warning(f"Plik cache {cache_filename} nie istnieje")
+        else:
+            try:
+                if os.path.exists(self.cache_folder):
+                    for filename in os.listdir(self.cache_folder):
+                        if filename.endswith('.json'):
+                            file_path = os.path.join(self.cache_folder, filename)
+                            os.remove(file_path)
+                            logging.info(f"Removed cache file: {filename}")
+                    logging.info("Wyczyszczono wszystkie pliki cache")
+            except OSError as e:
+                logging.error(f"Error clearing cache: {e}")
+    
+    def get_cache_info(self) -> Dict[str, Any]:
+        info = {
+            "cache_folder": self.cache_folder,
+            "cache_files": [],
+            "total_size_bytes": 0
+        }
+        
+        try:
+            if os.path.exists(self.cache_folder):
+                for filename in os.listdir(self.cache_folder):
+                    if filename.endswith('.json'):
+                        file_path = os.path.join(self.cache_folder, filename)
+                        file_size = os.path.getsize(file_path)
+                        file_modified = os.path.getmtime(file_path)
+                        
+                        info["cache_files"].append({
+                            "filename": filename,
+                            "size_bytes": file_size,
+                            "modified_timestamp": file_modified
+                        })
+                        info["total_size_bytes"] += file_size
+                        
+            info["total_files"] = len(info["cache_files"])
+            
+        except OSError as e:
+            logging.error(f"Error while checking cache: {e}")
+        
+        return info
+    
+    def is_wallet_in_frequency_cache(self, wallet_address: str) -> bool:
+        cache = self.load_frequency_cache()
+        return wallet_address.lower() in cache
+    
+    def add_wallet_to_frequency_cache(self, wallet_address: str) -> None:
+        cache = self.load_frequency_cache()
+        cache[wallet_address.lower()] = True
+        self.save_frequency_cache(cache)
