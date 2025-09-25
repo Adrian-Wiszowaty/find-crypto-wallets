@@ -54,28 +54,28 @@ T3_STR = config.get("T3_STR", "19-03-2025 20:00:00")
 TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B189c27678C0f551c08c01D150")
 
 # Dla każdej sieci oddzielny API_KEY oraz API_URL
-# BSC
-API_KEY_BSC = "A98VM42SB2U2I21QH3HU4CI821YMTYZYWJ"
-API_URL_BSC = "https://api.bscscan.com/api"
-# ETH
-API_KEY_ETH = "ZWPZR1RE3327TU3PWRFSWNF4CM621AZFI9"
-API_URL_ETH = "https://api.etherscan.io/api"
-# BASE
-API_KEY_BASE = "YJA2NW17BI66Y3JV5UVY4FC2BHKXICH7YX"
-API_URL_BASE = "https://api.basescan.org/api"
+# W API V2 używamy jednego klucza API Etherscan dla wszystkich sieci
+API_KEY = "N1D6WM3XXK4E1SSNJV2BP4YQ4PWG32IXED"
 
-# Wybieramy odpowiednie API_KEY oraz API_URL na podstawie wybranej sieci
+# BSC - chainId=56
+API_URL_BSC = "https://api.etherscan.io/v2/api?chainid=56"
+# ETH - chainId=1
+API_URL_ETH = "https://api.etherscan.io/v2/api?chainid=1"
+# BASE - chainId=8453
+API_URL_BASE = "https://api.etherscan.io/v2/api?chainid=8453"
+
+# Wybieramy odpowiedni URL API na podstawie wybranej sieci
 if NETWORK == "BSC":
-    API_KEY_USED = API_KEY_BSC
     API_URL = API_URL_BSC
 elif NETWORK == "ETH":
-    API_KEY_USED = API_KEY_ETH
     API_URL = API_URL_ETH
 elif NETWORK == "BASE":
-    API_KEY_USED = API_KEY_BASE
     API_URL = API_URL_BASE
 else:
     raise Exception(f"Nieobsługiwana sieć: {NETWORK}")
+
+# Używamy tego samego klucza API dla wszystkich sieci w V2
+API_KEY_USED = API_KEY
 
 # Adres natywnego tokena: dla BSC był WBNB, dla ETH i BASE będzie WETH – tutaj osobno definiujemy
 if NETWORK == "BASE":
@@ -136,9 +136,11 @@ def api_request(params):
     """
     Wykonuje zapytanie do wybranego API (API_URL) z podanymi parametrami.
     Implementuje retry z delay w przypadku błędów oraz walidację formatu odpowiedzi.
+    Obsługuje API V2 Etherscan.
     """
     for attempt in range(1, MAX_RETRIES + 1):
         try:
+            # W API_URL już jest zawarty chainId, więc nie musimy go dodawać do params
             response = requests.get(API_URL, params=params, timeout=10)
             if response.status_code == 200:
                 data = response.json()
@@ -146,18 +148,18 @@ def api_request(params):
                 if "result" in data:
                     if data.get("status") == "1" or isinstance(data["result"], list):
                         return data
-                    elif data.get("message") == "No transactions found":
+                    elif data.get("message") == "No transactions found" or data.get("message") == "No records found":
                         return {"result": []}
                     else:
-                        logging.error(f"Błąd API (nieoczekiwany format): {data}")
+                        logging.error(f"Błąd API V2 (nieoczekiwany format): {data}")
                 else:
-                    logging.error(f"Nieoczekiwana struktura odpowiedzi: {data}")
+                    logging.error(f"Nieoczekiwana struktura odpowiedzi V2: {data}")
             else:
                 logging.error(f"Błąd HTTP {response.status_code}: {response.text}")
         except Exception as e:
-            logging.error(f"Wyjątek przy zapytaniu do API: {e}")
+            logging.error(f"Wyjątek przy zapytaniu do API V2: {e}")
         time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
-    raise Exception("Nie udało się uzyskać poprawnej odpowiedzi z API po maksymalnej liczbie prób.")
+    raise Exception("Nie udało się uzyskać poprawnej odpowiedzi z API V2 po maksymalnej liczbie prób.")
 
 def get_block_by_timestamp(timestamp, closest="before"):
     """
@@ -501,18 +503,18 @@ def main():
         TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B189c27678C0f551c08c01D150")
         
         # Teraz globalne zmienne są uaktualnione i reszta kodu będzie korzystać z nowych danych
-        # Przykładowa logika ustawiania API_KEY oraz API_URL na podstawie NETWORK:
+        # Logika ustawiania API URL na podstawie NETWORK:
         if NETWORK == "BSC":
-            API_KEY_USED = API_KEY_BSC
             API_URL = API_URL_BSC
         elif NETWORK == "ETH":
-            API_KEY_USED = API_KEY_ETH
             API_URL = API_URL_ETH
         elif NETWORK == "BASE":
-            API_KEY_USED = API_KEY_BASE
             API_URL = API_URL_BASE
         else:
             raise Exception(f"Nieobsługiwana sieć: {NETWORK}")
+        
+        # Używamy tego samego klucza API dla wszystkich sieci w V2
+        API_KEY_USED = API_KEY
         
         if NETWORK == "BASE":
             BASE_NATIVE_ADDRESS = "0x4200000000000000000000000000000000000006"
