@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+from dotenv import load_dotenv
+load_dotenv()
 import requests
 import time
 import os
@@ -44,24 +45,22 @@ T2_STR = config.get("T2_STR", "18-03-2025 19:30:00")
 T3_STR = config.get("T3_STR", "19-03-2025 20:00:00")
 TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B189c27678C0f551c08c01D150")
 
-API_KEY_BSC = os.getenv("BSCSCAN_API_KEY", "")
-API_URL_BSC = "https://api.bscscan.com/api"
-API_KEY_ETH = os.getenv("ETHERSCAN_API_KEY", "")
-API_URL_ETH = "https://api.etherscan.io/api"
-API_KEY_BASE = os.getenv("BASESCAN_API_KEY", "")
-API_URL_BASE = "https://api.basescan.org/api"
+API_KEY = os.getenv("ETHERSCAN_API_KEY", "")
+
+API_URL_BSC = "https://api.etherscan.io/v2/api?chainid=56"
+API_URL_ETH = "https://api.etherscan.io/v2/api?chainid=1"
+API_URL_BASE = "https://api.etherscan.io/v2/api?chainid=8453"
 
 if NETWORK == "BSC":
-    API_KEY_USED = API_KEY_BSC
     API_URL = API_URL_BSC
 elif NETWORK == "ETH":
-    API_KEY_USED = API_KEY_ETH
     API_URL = API_URL_ETH
 elif NETWORK == "BASE":
-    API_KEY_USED = API_KEY_BASE
     API_URL = API_URL_BASE
 else:
     raise Exception(f"Unsupported network: {NETWORK}")
+
+API_KEY_USED = API_KEY
 
 if NETWORK == "BASE":
     BASE_NATIVE_ADDRESS = "0x4200000000000000000000000000000000000006"
@@ -117,18 +116,18 @@ def api_request(params):
                 if "result" in data:
                     if data.get("status") == "1" or isinstance(data["result"], list):
                         return data
-                    elif data.get("message") == "No transactions found":
+                    elif data.get("message") == "No transactions found" or data.get("message") == "No records found":
                         return {"result": []}
                     else:
-                        logging.error(f"API error (unexpected format): {data}")
+                        logging.error(f"API V2 error (unexpected format): {data}")
                 else:
-                    logging.error(f"Nieoczekiwana struktura odpowiedzi: {data}")
+                    logging.error(f"Nieoczekiwana struktura odpowiedzi V2: {data}")
             else:
                 logging.error(f"HTTP error {response.status_code}: {response.text}")
         except Exception as e:
-            logging.error(f"Exception during the API request: {e}")
+            logging.error(f"Exception during the API V2 request: {e}")
         time.sleep(DELAY_BETWEEN_REQUESTS * attempt)
-    raise Exception("Failed to get a valid response from the API after the maximum number of attempts.")
+    raise Exception("Failed to get a valid response from the API V2 after the maximum number of attempts.")
 
 def get_block_by_timestamp(timestamp, closest="before"):
     params = {
@@ -430,16 +429,15 @@ def main():
         TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", "0x712f43B21cf3e1B189c27678C0f551c08c01D150")
         
         if NETWORK == "BSC":
-            API_KEY_USED = API_KEY_BSC
             API_URL = API_URL_BSC
         elif NETWORK == "ETH":
-            API_KEY_USED = API_KEY_ETH
             API_URL = API_URL_ETH
         elif NETWORK == "BASE":
-            API_KEY_USED = API_KEY_BASE
             API_URL = API_URL_BASE
         else:
             raise Exception(f"Unsupported network: {NETWORK}")
+        
+        API_KEY_USED = API_KEY
         
         if NETWORK == "BASE":
             BASE_NATIVE_ADDRESS = "0x4200000000000000000000000000000000000006"
