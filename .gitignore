@@ -1,9 +1,18 @@
-# Ignoruj plik .DS_Store
-.DS_Store
-
-# Ignoruj folder Logs
+.vscode/
+__pycache__/
+*.py[cod]
+*$py.class
 Logs/
-
-# Ignoruj wszystkie pliki i katalogi w Wallets oprócz wallet_frequency_cache.json
+*.log
+.env
+.venv
+env/
+venv/
+ENV/
+Cache/
+dist/
+build/
+*.egg-info/
 Wallets/*
-
+.DS_Store
+Thumbs.db
