@@ -7,8 +7,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
 from tkinter import Text, messagebox
-from Main import main
-from LogRedirector import LogRedirector
+from main import main
+from log_redirector import LogRedirector
 from ttkbootstrap.window import Icon
 from tkinter import PhotoImage  # Importowanie PhotoImage dla pliku PNG
 

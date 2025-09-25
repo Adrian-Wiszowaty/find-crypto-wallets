@@ -113,7 +113,7 @@ class ExcelReporter:
                 current_row += 1
         else:
             # Brak danych
-            cell = worksheet.cell(row=current_row, column=1, value="Brak danych do wyświetlenia")
+            cell = worksheet.cell(row=current_row, column=1, value="Brak danych")
             cell.font = Font(italic=True, color="FF0000")
         
         # Automatyczne dopasowanie szerokości kolumn
@@ -122,10 +122,59 @@ class ExcelReporter:
         # Zapisanie pliku
         try:
             workbook.save(filename)
-            print(f"Report saved to: {filename}")
             return filename
         except Exception as e:
             raise Exception(f"Error saving Excel report: {e}")
+
+    def write_excel(self, filename: str, header_lines: List[str], rows: List[Dict[str, Any]]) -> None:
+        """
+        Metoda kompatybilna z oryginalną funkcją write_excel z main.py.
+        Zapisuje wyniki do pliku Excel (.xlsx) z formatowaniem.
+        """
+        wb = Workbook()
+        ws = wb.active
+        current_row = 1
+        
+        # Dodawanie nagłówków
+        for header in header_lines:
+            cell = ws.cell(row=current_row, column=1, value=header)
+            cell.font = Font(italic=True, color="808080")
+            current_row += 1
+        
+        current_row += 1  # pusta linia
+        
+        if rows:
+            # Nagłówki kolumn
+            fieldnames = list(rows[0].keys())
+            for col, name in enumerate(fieldnames, start=1):
+                cell = ws.cell(row=current_row, column=col, value=name.upper())
+                cell.font = Font(bold=True)
+            current_row += 1
+            
+            # Dane
+            for row in rows:
+                for col, key in enumerate(fieldnames, start=1):
+                    value = row.get(key, "")
+                    if key in ["purchased", "final_balance", "native_value", "usd_value"]:
+                        try:
+                            value = float(value)
+                        except:
+                            pass
+                    ws.cell(row=current_row, column=col, value=value)
+                current_row += 1
+            
+            # Automatyczne dopasowanie szerokości kolumn
+            for col in ws.columns:
+                max_length = 0
+                col_letter = col[0].column_letter
+                for cell in col:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                ws.column_dimensions[col_letter].width = max_length + 2
+        else:
+            ws.cell(row=current_row, column=1, value="Brak danych")
+        
+        wb.save(filename)
     
     def generate_summary_statistics(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Generuje statystyki podsumowujące dla analizy"""

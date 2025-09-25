@@ -14,7 +14,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 
 from config_manager import ConfigManager
-from LogRedirector import LogRedirector
+from log_redirector import LogRedirector
+from constants import Constants
 
 
 class MainWindow:
@@ -25,8 +26,8 @@ class MainWindow:
         self.main_function = main_function
         
         # Konfiguracja interfejsu
-        self.padx = 5
-        self.pady = 5
+        self.padx = Constants.GUI_PADDING_X
+        self.pady = Constants.GUI_PADDING_Y
         
         # Inicjalizacja głównego okna
         self._setup_main_window()
@@ -37,7 +38,7 @@ class MainWindow:
     def _setup_main_window(self) -> None:
         """Konfiguruje główne okno aplikacji"""
         self.root = ttk.Window(title="Find Wallets", themename="flatly")
-        self.root.minsize(600, 400)
+        self.root.minsize(Constants.GUI_MIN_WIDTH, Constants.GUI_MIN_HEIGHT)
         self.root.grid_columnconfigure(0, weight=1, uniform="equal")
         
         # Dodanie ikony
@@ -46,16 +47,16 @@ class MainWindow:
     def _setup_icon(self) -> None:
         """Ustawia ikonę aplikacji"""
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        icon_path = os.path.join(base_dir, "images", "twoja_ikona.png")
+        icon_path = os.path.join(base_dir, Constants.FOLDER_IMAGES, Constants.FILE_APP_ICON)
         
         if os.path.exists(icon_path):
             try:
                 icon_image = PhotoImage(file=icon_path)
                 self.root.iconphoto(True, icon_image)
             except Exception as e:
-                print(f"Błąd wczytywania ikony: {e}")
+                print(f"{Constants.ERROR_ICON_LOAD_FAILED}: {e}")
         else:
-            print("Plik ikony nie został znaleziony!")
+            print(Constants.ERROR_ICON_NOT_FOUND)
     
     def _setup_styles(self) -> None:
         """Konfiguruje style dla widgetów"""
@@ -77,10 +78,11 @@ class MainWindow:
     
     def _create_log_widget(self) -> None:
         """Tworzy widget do wyświetlania logów"""
-        self.log_widget = Text(self.root, height=15, width=70)
+        self.log_widget = Text(self.root, height=Constants.GUI_LOG_HEIGHT, width=Constants.GUI_LOG_WIDTH)
         self.log_widget.grid(row=0, column=0, padx=self.padx, pady=5, 
                            columnspan=2, sticky="ew")
-        self.log_widget.config(bg="black", fg="white", insertbackground="white")
+        self.log_widget.config(bg=Constants.GUI_LOG_BG_COLOR, fg=Constants.GUI_LOG_FG_COLOR, 
+                              insertbackground=Constants.GUI_LOG_INSERT_BG_COLOR)
         
         # Przekierowanie stdout do widgetu logów
         sys.stdout = LogRedirector(self.log_widget)
@@ -221,7 +223,7 @@ class MainWindow:
         
         # Lista dostępnych sieci
         self.network_var = ttk.StringVar()
-        network_codes = ["ETH", "BSC", "BASE"]
+        network_codes = Constants.get_supported_networks()
         
         self.network_combo = ttk.Combobox(
             frame_network, textvariable=self.network_var,
@@ -230,7 +232,7 @@ class MainWindow:
         self.network_combo.grid(row=0, column=1, padx=self.padx, pady=self.pady, sticky="w")
         
         # Ustaw domyślną wartość
-        self.network_combo.set("ETH")
+        self.network_combo.set(Constants.DEFAULT_CONFIG["NETWORK"])
         
         # Przycisk uruchomienia
         self.run_button = ttk.Button(
@@ -322,7 +324,7 @@ class MainWindow:
             config = self.config_manager.config
             
             # Adres kontraktu
-            token_address = config.get("TOKEN_CONTRACT_ADDRESS", "")
+            token_address = config.get("TOKEN_CONTRACT_ADDRESS", Constants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
             self.token_contract_entry.insert(0, token_address)
             
             # Sieć
@@ -330,9 +332,9 @@ class MainWindow:
             self.network_combo.set(network)
             
             # Daty i czasy
-            self._load_datetime_config("T1_STR", self.T1_widgets, "17-03-2025 22:25:00")
-            self._load_datetime_config("T2_STR", self.T2_widgets, "18-03-2025 19:30:00")
-            self._load_datetime_config("T3_STR", self.T3_widgets, "19-03-2025 20:00:00")
+            self._load_datetime_config("T1_STR", self.T1_widgets, Constants.DEFAULT_CONFIG["T1_STR"])
+            self._load_datetime_config("T2_STR", self.T2_widgets, Constants.DEFAULT_CONFIG["T2_STR"])
+            self._load_datetime_config("T3_STR", self.T3_widgets, Constants.DEFAULT_CONFIG["T3_STR"])
             
         except Exception as e:
             print(f"Błąd ładowania konfiguracji: {e}")

@@ -6,6 +6,7 @@ import time
 import logging
 from typing import Dict, Any, List, Optional, Union
 from config_manager import ConfigManager
+from constants import Constants
 
 
 class ApiClient:
@@ -13,12 +14,12 @@ class ApiClient:
     
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
-        self.api_key = "N1D6WM3XXK4E1SSNJV2BP4YQ4PWG32IXED"
+        self.api_key = Constants.ETHERSCAN_API_KEY
         self.network_config = config_manager.get_network_config()
         self.api_url = self.network_config["api_url"]
-        self.max_retries = 3
-        self.delay_between_requests = 0.2
-        self.block_chunk_size = 1200
+        self.max_retries = Constants.MAX_RETRIES
+        self.delay_between_requests = Constants.DELAY_BETWEEN_REQUESTS
+        self.block_chunk_size = Constants.BLOCK_CHUNK_SIZE
         
     def _make_request_with_retry(self, url: str, params: Dict[str, Any], 
                                 retries: int = None) -> Optional[Dict[str, Any]]:
@@ -28,7 +29,7 @@ class ApiClient:
             
         for attempt in range(1, retries + 1):
             try:
-                response = requests.get(url, params=params, timeout=10)
+                response = requests.get(url, params=params, timeout=Constants.REQUEST_TIMEOUT)
                 
                 if response.status_code == 200:
                     return response.json()
@@ -153,7 +154,7 @@ class ApiClient:
     
     def get_token_price_from_dexscreener(self, token_address: str) -> Union[float, str]:
         """Pobiera cenę tokena z Dexscreener"""
-        url = f"https://api.dexscreener.com/latest/dex/tokens/{token_address.lower()}"
+        url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
         
         for attempt in range(1, 6):  # 5 prób
             try:
@@ -190,7 +191,7 @@ class ApiClient:
     def get_native_token_usd_price(self) -> Union[float, str]:
         """Pobiera cenę natywnego tokena w USD z CoinGecko"""
         token_id = self.network_config["native_token_full_name"]
-        url = f"https://api.coingecko.com/api/v3/simple/price"
+        url = Constants.COINGECKO_API_URL
         params = {
             "ids": token_id,
             "vs_currencies": "usd"
