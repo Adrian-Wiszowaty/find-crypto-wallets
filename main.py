@@ -101,6 +101,13 @@ def main():
         wallet_analyzer = WalletAnalyzer(config_manager, api_client)
         excel_reporter = ExcelReporter(config_manager)
         
+        try:
+            DateTimeHelper.validate_date_range(T1_STR, T2_STR, T3_STR)
+            print("✅ Walidacja przedziałów czasowych przeszła pomyślnie")
+        except ValueError as e:
+            print(f"❌ Date validation error: {e}")
+            raise
+        
         t1_unix = DateTimeHelper.parse_date(T1_STR)
         t2_unix = DateTimeHelper.parse_date(T2_STR)
         t3_unix = DateTimeHelper.parse_date(T3_STR)

@@ -50,8 +50,8 @@ class DateTimeHelper:
             t2 = DateTimeHelper.parse_date(t2_str)
             t3 = DateTimeHelper.parse_date(t3_str)
             
-            if not (t1 < t2 < t3):
-                raise ValueError(f"Invalid time range: T1({t1_str}) < T2({t2_str}) < T3({t3_str})")
+            if not (t1 <= t2 <= t3):
+                raise ValueError(f"")
             
             return True
         except Exception as e:
