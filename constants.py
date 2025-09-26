@@ -92,6 +92,9 @@ class Constants:
     GUI_LOG_FG_COLOR = "white"
     GUI_LOG_INSERT_BG_COLOR = "white"
     
+    APP_TITLE = "Find Wallets"
+    GUI_THEME = "flatly"
+    
     DATE_FORMAT = "%d-%m-%Y %H:%M:%S"
     TIMEZONE_OFFSET_HOURS = 1
     

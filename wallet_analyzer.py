@@ -216,7 +216,7 @@ class WalletAnalyzer:
                 continue
             
             if not self.check_wallet_general_frequency(wallet):
-                print(f"Portfel {wallet} odrzucony (częste transakcje pełne).")
+                print(f"Portfel {wallet} odrzucony (częste transakcje adresu).")
                 continue
             
             filtered_wallets.append(wallet)

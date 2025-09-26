@@ -68,17 +68,6 @@ logging.basicConfig(
 )
 
 
-def get_output_filename():
-    base_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}.xlsx")
-    if not os.path.exists(base_name):
-        return base_name
-    suffix = 1
-    while True:
-        new_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}_{suffix}.xlsx")
-        if not os.path.exists(new_name):
-            return new_name
-        suffix += 1
-
 start_time = time.time()
 
 def main():
@@ -93,13 +82,22 @@ def main():
         from datetime_helper import DateTimeHelper
         
         print(f"Wybrana sieć: {NETWORK}")
-        print("Rozpoczynam działanie skryptu...")
         
         config_manager = ConfigManager()
         api_client = ApiClient(config_manager)
         blockchain_analyzer = BlockchainAnalyzer(api_client)
         cache_manager = CacheManager(config_manager)
         exchange_rate_service = ExchangeRateService(config_manager)
+        
+        token_name = exchange_rate_service.get_token_name(TOKEN_CONTRACT_ADDRESS)
+        if token_name != "error":
+            print(f"Wybrany token: {token_name}")
+        else:
+            print(f"Wybrany token: {TOKEN_CONTRACT_ADDRESS} (nie udało się pobrać nazwy)")
+            token_name = TOKEN_CONTRACT_ADDRESS
+        
+        print("Rozpoczynam działanie skryptu...")
+        
         wallet_analyzer = WalletAnalyzer(config_manager, api_client)
         excel_reporter = ExcelReporter(config_manager)
         
@@ -122,46 +120,48 @@ def main():
         
         candidate_wallets = blockchain_analyzer.find_candidate_wallets(txs_in_period, t1_unix, t2_unix)
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
+        print(f"---")
         
         filtered_wallets = wallet_analyzer.filter_wallets_by_frequency(
             candidate_wallets, 
             wallet_transactions,
             blockchain_analyzer
         )
+        print(f"---")
         print(f"Portfeli po weryfikacji: {len(filtered_wallets)}")
         
         exchange_rate = exchange_rate_service.get_exchange_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
         if exchange_rate == "error":
             print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna ustawiona jako 'error'.")
-        else:
-            print(f"Kurs wymiany tokena -> {NATIVE_TOKEN_NAME} na dzień T3: {exchange_rate}")
         
         native_to_usd_rate = exchange_rate_service.get_native_to_usd_rate()
         if native_to_usd_rate == "error":
             print("Nie udało się pobrać kursu wymiany natywnego tokena do USD.")
         else:
             print(f"Kurs wymiany {NATIVE_TOKEN_NAME} -> USD: {native_to_usd_rate}")
+
+        token_usd_rate = exchange_rate_service.get_token_usd_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
+        if token_usd_rate == "error":
+            print("Nie udało się pobrać kursu tokena do USD.")
+        else:
+            print(f"Kurs wymiany tokena -> USD na dzień T3: ${token_usd_rate:.6f}")
         
+        print(f"---")
+
         final_results = wallet_analyzer.analyze_wallet_balances(
             filtered_wallets,
             wallet_transactions,
             t1_unix, t2_unix, t3_unix,
             exchange_rate, native_to_usd_rate
         )
+        print(f"---")
         print(f"Portfeli po filtracji: {len(final_results)}")
         
         cache_manager.save_frequency_cache(wallet_analyzer.frequency_cache)
         
-        header_lines = [
-            f"TOKEN_CONTRACT_ADDRESS: {TOKEN_CONTRACT_ADDRESS}",
-            f"T1: {T1_STR}",
-            f"T2: {T2_STR}",
-            f"T3: {T3_STR}",
-            f"NETWORK: {NETWORK}"
-        ]
-        
-        output_filename = get_output_filename()
-        excel_reporter.write_excel(output_filename, header_lines, final_results)
+        output_filename = excel_reporter.generate_report(final_results, token_name, T1_STR, T2_STR, T3_STR)
+        print(f"Raport zapisany do:")
+        print(output_filename)
         
         elapsed_time = time.time() - start_time
         execution_time_formatted = DateTimeHelper.format_execution_time(elapsed_time)

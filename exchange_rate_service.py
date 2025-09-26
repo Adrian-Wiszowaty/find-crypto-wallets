@@ -75,6 +75,49 @@ class ExchangeRateService:
         logging.error(f"Failed to fetch the exchange rate for token {token_address} after {retries} attempts")
         return "error"
     
+    def get_token_usd_rate(self, token_address: str, retries: int = None) -> Union[float, str]:
+        if retries is None:
+            retries = self.max_retries
+            
+        attempt = 0
+        usd_rate = None
+        
+        while attempt < retries:
+            try:
+                url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
+                response = requests.get(url, timeout=10)
+                
+                if response.status_code != 200:
+                    error_msg = f"Server response for token USD: {response.status_code}, body: {response.text}"
+                    logging.error(error_msg)
+                    raise Exception(f"HTTP error dla tokena USD: {response.status_code}")
+                
+                data = response.json()
+                pairs = data.get("pairs", [])
+                
+                for pair in pairs:
+                    price_usd = pair.get("priceUsd")
+                    if price_usd is not None:
+                        usd_rate = float(price_usd)
+                        break
+                
+                if usd_rate is not None:
+                    logging.info(f"Pobrano kurs USD dla tokena {token_address}: {usd_rate}")
+                    return usd_rate
+                else:
+                    error_msg = f"Nie znaleziono ceny USD dla tokena {token_address}"
+                    logging.error(error_msg)
+                    raise Exception("Brak ceny USD w danych API")
+                    
+            except Exception as e:
+                logging.error(f"Attempt {attempt + 1} to fetch the USD rate failed: {e}")
+                attempt += 1
+                if attempt < retries:
+                    time.sleep(self.delay_between_requests * attempt)
+        
+        logging.error(f"Failed to fetch the USD rate for token {token_address} after {retries} attempts")
+        return "error"
+    
     def get_native_to_usd_rate(self, retries: int = None) -> Union[float, str]:
         if retries is None:
             retries = 3
@@ -170,3 +213,51 @@ class ExchangeRateService:
         return (exchange_rate != "error" and native_usd_rate != "error" and
                 isinstance(exchange_rate, (int, float)) and 
                 isinstance(native_usd_rate, (int, float)))
+    
+    def get_token_name(self, token_address: str, retries: int = None) -> Union[str, str]:
+        if retries is None:
+            retries = self.max_retries
+            
+        attempt = 0
+        token_name = None
+        
+        while attempt < retries:
+            try:
+                url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
+                response = requests.get(url, timeout=10)
+                
+                if response.status_code != 200:
+                    error_msg = f"Server response for token name: {response.status_code}, body: {response.text}"
+                    logging.error(error_msg)
+                    raise Exception(f"HTTP error dla nazwy tokena: {response.status_code}")
+                
+                data = response.json()
+                pairs = data.get("pairs", [])
+                
+                for pair in pairs:
+                    base_token = pair.get("baseToken", {})
+                    quote_token = pair.get("quoteToken", {})
+                    
+                    if base_token.get("address", "").lower() == token_address.lower():
+                        token_name = base_token.get("name") or base_token.get("symbol")
+                        break
+                    elif quote_token.get("address", "").lower() == token_address.lower():
+                        token_name = quote_token.get("name") or quote_token.get("symbol")
+                        break
+                
+                if token_name is not None:
+                    logging.info(f"Fetched token name {token_address}: {token_name}")
+                    return token_name
+                else:
+                    error_msg = f"Nie znaleziono nazwy dla tokena {token_address}"
+                    logging.error(error_msg)
+                    raise Exception("Brak nazwy tokena w danych API")
+                    
+            except Exception as e:
+                logging.error(f"Attempt {attempt + 1} to fetch the token name failed: {e}")
+                attempt += 1
+                if attempt < retries:
+                    time.sleep(self.delay_between_requests * attempt)
+        
+        logging.error(f"Failed to fetch the token name {token_address} after {retries} attempts")
+        return "error"
