@@ -94,21 +94,6 @@ logging.basicConfig(
 # - simulate_wallet_balance -> WalletAnalyzer.simulate_wallet_balance()
 # - write_excel -> ExcelReporter.write_excel()
 
-def get_output_filename():
-    """
-    Tworzy nazwę pliku wynikowego Excel w folderze Wallets.
-    Zachowana dla kompatybilności z ExcelReporter.
-    """
-    base_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}.xlsx")
-    if not os.path.exists(base_name):
-        return base_name
-    suffix = 1
-    while True:
-        new_name = os.path.join(WALLETS_FOLDER, f"{TOKEN_CONTRACT_ADDRESS}_{suffix}.xlsx")
-        if not os.path.exists(new_name):
-            return new_name
-        suffix += 1
-
 # Na początku skryptu
 start_time = time.time()  # Zapisujemy czas startu
 
@@ -129,7 +114,6 @@ def main():
         from datetime_helper import DateTimeHelper
         
         print(f"Wybrana sieć: {NETWORK}")
-        print("Rozpoczynam działanie skryptu...")
         
         # Inicjalizacja klas
         config_manager = ConfigManager()
@@ -137,6 +121,17 @@ def main():
         blockchain_analyzer = BlockchainAnalyzer(api_client)
         cache_manager = CacheManager(config_manager)
         exchange_rate_service = ExchangeRateService(config_manager)
+        
+        # Pobierz i wyświetl nazwę tokena
+        token_name = exchange_rate_service.get_token_name(TOKEN_CONTRACT_ADDRESS)
+        if token_name != "error":
+            print(f"Wybrany token: {token_name}")
+        else:
+            print(f"Wybrany token: {TOKEN_CONTRACT_ADDRESS} (nie udało się pobrać nazwy)")
+            token_name = TOKEN_CONTRACT_ADDRESS  # Fallback do adresu
+        
+        print("Rozpoczynam działanie skryptu...")
+        
         wallet_analyzer = WalletAnalyzer(config_manager, api_client)
         excel_reporter = ExcelReporter(config_manager)
         
@@ -165,6 +160,7 @@ def main():
         # Znajdowanie kandydatów (portfele z zakupem w okresie T1-T2)
         candidate_wallets = blockchain_analyzer.find_candidate_wallets(txs_in_period, t1_unix, t2_unix)
         print(f"Znaleziono {len(candidate_wallets)} kandydatów (portfeli z zakupem w okresie T1-T2).")
+        print(f"---")
         
         # Weryfikacja portfeli
         filtered_wallets = wallet_analyzer.filter_wallets_by_frequency(
@@ -172,21 +168,28 @@ def main():
             wallet_transactions,
             blockchain_analyzer
         )
+        print(f"---")
         print(f"Portfeli po weryfikacji: {len(filtered_wallets)}")
         
-        # Pobieranie kursów wymiany
         exchange_rate = exchange_rate_service.get_exchange_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
         if exchange_rate == "error":
             print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna ustawiona jako 'error'.")
-        else:
-            print(f"Kurs wymiany tokena -> {NATIVE_TOKEN_NAME} na dzień T3: {exchange_rate}")
         
         native_to_usd_rate = exchange_rate_service.get_native_to_usd_rate()
         if native_to_usd_rate == "error":
             print("Nie udało się pobrać kursu wymiany natywnego tokena do USD.")
         else:
             print(f"Kurs wymiany {NATIVE_TOKEN_NAME} -> USD: {native_to_usd_rate}")
+
+        # Pobierz i wyświetl kurs tokena bezpośrednio do USD
+        token_usd_rate = exchange_rate_service.get_token_usd_rate(TOKEN_CONTRACT_ADDRESS, retries=5)
+        if token_usd_rate == "error":
+            print("Nie udało się pobrać kursu tokena do USD.")
+        else:
+            print(f"Kurs wymiany tokena -> USD na dzień T3: ${token_usd_rate:.6f}")
         
+        print(f"---")
+
         # Analiza salda portfeli i filtracja końcowa
         final_results = wallet_analyzer.analyze_wallet_balances(
             filtered_wallets,
@@ -194,22 +197,16 @@ def main():
             t1_unix, t2_unix, t3_unix,
             exchange_rate, native_to_usd_rate
         )
+        print(f"---")
         print(f"Portfeli po filtracji: {len(final_results)}")
         
         # Zapisanie cache'u
         cache_manager.save_frequency_cache(wallet_analyzer.frequency_cache)
         
-        # Generowanie raportu Excel  
-        header_lines = [
-            f"TOKEN_CONTRACT_ADDRESS: {TOKEN_CONTRACT_ADDRESS}",
-            f"T1: {T1_STR}",
-            f"T2: {T2_STR}",
-            f"T3: {T3_STR}",
-            f"NETWORK: {NETWORK}"
-        ]
-        
-        output_filename = get_output_filename()
-        excel_reporter.write_excel(output_filename, header_lines, final_results)
+        # Generowanie raportu Excel
+        output_filename = excel_reporter.generate_report(final_results, token_name, T1_STR, T2_STR, T3_STR)
+        print(f"Raport zapisany do:")
+        print(output_filename)
         
         # Mierzenie czasu wykonania
         elapsed_time = time.time() - start_time

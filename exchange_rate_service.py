@@ -91,6 +91,60 @@ class ExchangeRateService:
         logging.error(f"Nie udało się pobrać kursu wymiany dla tokena {token_address} po {retries} próbach")
         return "error"
     
+    def get_token_usd_rate(self, token_address: str, retries: int = None) -> Union[float, str]:
+        """
+        Pobiera kurs wymiany tokena bezpośrednio do USD z API Dexscreener.
+        
+        Args:
+            token_address: Adres kontraktu tokena
+            retries: Liczba prób (domyślnie z Constants)
+            
+        Returns:
+            Union[float, str]: Kurs wymiany do USD lub "error" w przypadku błędu
+        """
+        if retries is None:
+            retries = self.max_retries
+            
+        attempt = 0
+        usd_rate = None
+        
+        while attempt < retries:
+            try:
+                url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
+                response = requests.get(url, timeout=10)
+                
+                if response.status_code != 200:
+                    error_msg = f"Odpowiedź serwera dla tokena USD: {response.status_code}, treść: {response.text}"
+                    logging.error(error_msg)
+                    raise Exception(f"HTTP error dla tokena USD: {response.status_code}")
+                
+                data = response.json()
+                pairs = data.get("pairs", [])
+                
+                # Szukamy pierwszą parę z ceną USD
+                for pair in pairs:
+                    price_usd = pair.get("priceUsd")
+                    if price_usd is not None:
+                        usd_rate = float(price_usd)
+                        break
+                
+                if usd_rate is not None:
+                    logging.info(f"Pobrano kurs USD dla tokena {token_address}: {usd_rate}")
+                    return usd_rate
+                else:
+                    error_msg = f"Nie znaleziono ceny USD dla tokena {token_address}"
+                    logging.error(error_msg)
+                    raise Exception("Brak ceny USD w danych API")
+                    
+            except Exception as e:
+                logging.error(f"Próba {attempt + 1} pobrania kursu USD nie powiodła się: {e}")
+                attempt += 1
+                if attempt < retries:
+                    time.sleep(self.delay_between_requests * attempt)
+        
+        logging.error(f"Nie udało się pobrać kursu USD dla tokena {token_address} po {retries} próbach")
+        return "error"
+    
     def get_native_to_usd_rate(self, retries: int = None) -> Union[float, str]:
         """
         Pobiera kurs wymiany natywnego tokena (ETH, BNB) do USD z CoinGecko API.
@@ -234,3 +288,63 @@ class ExchangeRateService:
         return (exchange_rate != "error" and native_usd_rate != "error" and
                 isinstance(exchange_rate, (int, float)) and 
                 isinstance(native_usd_rate, (int, float)))
+    
+    def get_token_name(self, token_address: str, retries: int = None) -> Union[str, str]:
+        """
+        Pobiera nazwę tokena z API Dexscreener.
+        
+        Args:
+            token_address: Adres kontraktu tokena
+            retries: Liczba prób (domyślnie z Constants)
+            
+        Returns:
+            Union[str, str]: Nazwa tokena lub "error" w przypadku błędu
+        """
+        if retries is None:
+            retries = self.max_retries
+            
+        attempt = 0
+        token_name = None
+        
+        while attempt < retries:
+            try:
+                url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
+                response = requests.get(url, timeout=10)
+                
+                if response.status_code != 200:
+                    error_msg = f"Odpowiedź serwera dla nazwy tokena: {response.status_code}, treść: {response.text}"
+                    logging.error(error_msg)
+                    raise Exception(f"HTTP error dla nazwy tokena: {response.status_code}")
+                
+                data = response.json()
+                pairs = data.get("pairs", [])
+                
+                # Szukamy pierwszą parę i pobieramy nazwę tokena
+                for pair in pairs:
+                    base_token = pair.get("baseToken", {})
+                    quote_token = pair.get("quoteToken", {})
+                    
+                    # Sprawdź czy nasz token jest base czy quote tokenem
+                    if base_token.get("address", "").lower() == token_address.lower():
+                        token_name = base_token.get("name") or base_token.get("symbol")
+                        break
+                    elif quote_token.get("address", "").lower() == token_address.lower():
+                        token_name = quote_token.get("name") or quote_token.get("symbol")
+                        break
+                
+                if token_name is not None:
+                    logging.info(f"Pobrano nazwę tokena {token_address}: {token_name}")
+                    return token_name
+                else:
+                    error_msg = f"Nie znaleziono nazwy dla tokena {token_address}"
+                    logging.error(error_msg)
+                    raise Exception("Brak nazwy tokena w danych API")
+                    
+            except Exception as e:
+                logging.error(f"Próba {attempt + 1} pobrania nazwy tokena nie powiodła się: {e}")
+                attempt += 1
+                if attempt < retries:
+                    time.sleep(self.delay_between_requests * attempt)
+        
+        logging.error(f"Nie udało się pobrać nazwy tokena {token_address} po {retries} próbach")
+        return "error"

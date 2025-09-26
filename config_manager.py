@@ -19,33 +19,16 @@ class ConfigManager:
         
     def _load_config(self) -> Dict[str, Any]:
         """Ładuje konfigurację z pliku config.json"""
-        try:
-            if os.path.exists(self.config_file):
-                with open(self.config_file, "r", encoding="utf-8") as f:
-                    return json.load(f)
-        except FileNotFoundError:
-            logging.warning(f"Plik konfiguracji {self.config_file} nie został znaleziony")
-        except json.JSONDecodeError as e:
-            logging.error(f"Błąd parsowania JSON w pliku {self.config_file}: {e}")
-        except Exception as e:
-            logging.error(f"Błąd ładowania konfiguracji z {self.config_file}: {e}")
-        
-        return {}
+        from error_handler import ErrorHandler
+        return ErrorHandler.safe_json_load(self.config_file, {})
     
     def save_config(self, config_data: Dict[str, Any]) -> bool:
         """Zapisuje konfigurację do pliku"""
-        try:
-            # Tworzenie katalogu config jeśli nie istnieje
-            os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
-            
-            with open(self.config_file, "w", encoding="utf-8") as f:
-                json.dump(config_data, f, indent=4, ensure_ascii=False)
-            
+        from error_handler import ErrorHandler
+        if ErrorHandler.safe_json_save(config_data, self.config_file):
             self.config = config_data
             return True
-        except Exception as e:
-            logging.error(f"Błąd zapisu konfiguracji do {self.config_file}: {e}")
-            return False
+        return False
     
     def get(self, key: str, default: Any = None) -> Any:
         """Pobiera wartość z konfiguracji"""
