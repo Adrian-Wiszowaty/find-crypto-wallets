@@ -13,6 +13,7 @@ from tkinter import Text, messagebox
 import ttkbootstrap as ttk
 
 from constants import Constants
+from datetime_helper import DateTimeHelper
 from error_handler import ErrorHandler
 from gui_helpers import GUIHelpers
 from log_redirector import LogRedirector
@@ -196,6 +197,18 @@ class WalletApp:
             # Walidacja danych
             if not token_contract:
                 messagebox.showerror("Błąd", "Adres kontraktu nie może być pusty!")
+                return
+            
+            # Walidacja przedziałów czasowych T1 <= T2 <= T3
+            try:
+                DateTimeHelper.validate_date_range(T1_str, T2_str, T3_str)
+            except ValueError as e:
+                messagebox.showerror("Błąd walidacji dat", 
+                                   f"Niepoprawne ustawienie dat:\n{str(e)}\n\n"
+                                   "Upewnij się, że T1 ≤ T2 ≤ T3")
+                return
+            except Exception as e:
+                messagebox.showerror("Błąd", f"Błąd podczas walidacji dat: {str(e)}")
                 return
             
             # Utworzenie konfiguracji

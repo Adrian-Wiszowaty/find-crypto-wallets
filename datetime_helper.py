@@ -88,7 +88,7 @@ class DateTimeHelper:
     @staticmethod
     def validate_date_range(t1_str: str, t2_str: str, t3_str: str) -> bool:
         """
-        Waliduje czy przedziały czasowe są logicznie poprawne (T1 < T2 < T3).
+        Waliduje czy przedziały czasowe są logicznie poprawne (T1 <= T2 <= T3).
         
         Args:
             t1_str: Data T1 w formacie Constants.DATE_FORMAT
@@ -106,8 +106,8 @@ class DateTimeHelper:
             t2 = DateTimeHelper.parse_date(t2_str)
             t3 = DateTimeHelper.parse_date(t3_str)
             
-            if not (t1 < t2 < t3):
-                raise ValueError(f"Niepoprawny przedział czasowy: T1({t1_str}) < T2({t2_str}) < T3({t3_str})")
+            if not (t1 <= t2 <= t3):
+                raise ValueError(f"")
             
             return True
         except Exception as e:

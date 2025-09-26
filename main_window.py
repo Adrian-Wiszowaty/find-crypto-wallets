@@ -16,6 +16,7 @@ from ttkbootstrap.widgets import DateEntry
 from config_manager import ConfigManager
 from log_redirector import LogRedirector
 from constants import Constants
+from datetime_helper import DateTimeHelper
 
 
 class MainWindow:
@@ -139,6 +140,16 @@ class MainWindow:
         second_combo.grid(row=row, column=3, padx=self.padx, pady=self.pady)
         second_combo.set("00")
         
+        # Dodaj walidację w czasie rzeczywistym po utworzeniu wszystkich widgets
+        def schedule_validation():
+            self.root.after(100, self._validate_datetime_range_realtime)
+        
+        # Podłącz eventy zmiany do walidacji
+        date_entry.entry.bind('<KeyRelease>', lambda e: schedule_validation())
+        hour_combo.bind('<<ComboboxSelected>>', lambda e: schedule_validation())
+        minute_combo.bind('<<ComboboxSelected>>', lambda e: schedule_validation())
+        second_combo.bind('<<ComboboxSelected>>', lambda e: schedule_validation())
+        
         return date_entry, hour_combo, minute_combo, second_combo
     
     def _copy_datetime(self, source: Tuple, target: Tuple) -> None:
@@ -204,6 +215,34 @@ class MainWindow:
     def _copy_t2_to_t3(self) -> None:
         """Kopiuje T2 do T3"""
         self._copy_datetime(self.T2_widgets, self.T3_widgets)
+        
+    def _validate_datetime_range_realtime(self) -> None:
+        """Waliduje przedziały czasowe w czasie rzeczywistym i pokazuje ostrzeżenie"""
+        try:
+            t1_str = self._get_datetime_string(self.T1_widgets)
+            t2_str = self._get_datetime_string(self.T2_widgets)
+            t3_str = self._get_datetime_string(self.T3_widgets)
+            
+            DateTimeHelper.validate_date_range(t1_str, t2_str, t3_str)
+            
+            # Usuń ostrzeżenie jeśli wszystko jest OK
+            if hasattr(self, '_warning_label'):
+                self._warning_label.destroy()
+                delattr(self, '_warning_label')
+                
+        except ValueError:
+            # Pokaż ostrzeżenie
+            if not hasattr(self, '_warning_label'):
+                self._warning_label = ttk.Label(
+                    self.root, 
+                    text="⚠️ Uwaga: T1 musi być ≤ T2 ≤ T3", 
+                    style="warning.TLabel",
+                    foreground="red"
+                )
+                self._warning_label.grid(row=5, column=0, padx=self.padx, pady=5, sticky="ew")
+        except Exception:
+            # Ignoruj inne błędy (np. niepoprawny format daty)
+            pass
     
     def _create_network_section(self) -> None:
         """Tworzy sekcję wyboru sieci i przycisk uruchomienia"""
@@ -270,7 +309,20 @@ class MainWindow:
             messagebox.showerror("Błąd", "Proszę podać adres kontraktu tokena!")
             return False
         
-        # Dodatkowe walidacje można dodać tutaj
+        # Walidacja przedziałów czasowych T1 <= T2 <= T3
+        try:
+            t1_str = self._get_datetime_string(self.T1_widgets)
+            t2_str = self._get_datetime_string(self.T2_widgets)
+            t3_str = self._get_datetime_string(self.T3_widgets)
+            
+            DateTimeHelper.validate_date_range(t1_str, t2_str, t3_str)
+        except ValueError as e:
+            messagebox.showerror("Błąd walidacji dat\n\n")
+            return False
+        except Exception as e:
+            messagebox.showerror("Błąd", f"Błąd podczas walidacji dat: {str(e)}")
+            return False
+        
         return True
     
     def _on_run_clicked(self) -> None:

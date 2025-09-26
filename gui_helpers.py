@@ -9,6 +9,7 @@ from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
 from typing import Tuple, List
 from constants import Constants
+from datetime_helper import DateTimeHelper
 
 
 class GUIHelpers:
@@ -146,3 +147,28 @@ class GUIHelpers:
                        bordercolor=style.colors.info,
                        arrowcolor=style.colors.info)
         style.map("info.TCombobox", fieldbackground=[("readonly", "white")])
+    
+    @staticmethod
+    def validate_datetime_widgets(t1_widgets: Tuple, t2_widgets: Tuple, t3_widgets: Tuple) -> bool:
+        """
+        Waliduje czy przedziały czasowe T1, T2, T3 spełniają warunek T1 <= T2 <= T3.
+        
+        Args:
+            t1_widgets: Tupla (date_entry, hour_combo, minute_combo, second_combo) dla T1
+            t2_widgets: Tupla (date_entry, hour_combo, minute_combo, second_combo) dla T2
+            t3_widgets: Tupla (date_entry, hour_combo, minute_combo, second_combo) dla T3
+            
+        Returns:
+            bool: True jeśli walidacja przeszła pomyślnie
+            
+        Raises:
+            ValueError: Gdy przedziały są niepoprawne
+        """
+        try:
+            t1_str = GUIHelpers.get_datetime_string(t1_widgets)
+            t2_str = GUIHelpers.get_datetime_string(t2_widgets)
+            t3_str = GUIHelpers.get_datetime_string(t3_widgets)
+            
+            return DateTimeHelper.validate_date_range(t1_str, t2_str, t3_str)
+        except Exception as e:
+            raise ValueError(f"Błąd walidacji GUI: {e}")
