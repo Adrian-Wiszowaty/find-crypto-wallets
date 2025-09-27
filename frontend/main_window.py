@@ -10,10 +10,10 @@ from typing import Tuple, Callable
 import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 
-from config_manager import ConfigManager
-from log_redirector import LogRedirector
-from constants import Constants
-from datetime_helper import DateTimeHelper
+from backend.config_manager import ConfigManager
+from .log_redirector import LogRedirector
+from shared.constants import Constants
+from shared.datetime_helper import DateTimeHelper
 
 
 class MainWindow:
@@ -38,7 +38,7 @@ class MainWindow:
         self._setup_icon()
     
     def _setup_icon(self) -> None:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         icon_path = os.path.join(base_dir, Constants.FOLDER_IMAGES, Constants.FILE_APP_ICON)
         
         if os.path.exists(icon_path):

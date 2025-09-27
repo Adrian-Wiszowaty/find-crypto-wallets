@@ -8,18 +8,18 @@ from tkinter import Text, messagebox
 
 import ttkbootstrap as ttk
 
-from constants import Constants
-from datetime_helper import DateTimeHelper
-from error_handler import ErrorHandler
-from gui_helpers import GUIHelpers
-from log_redirector import LogRedirector
-from main import main
+from shared.constants import Constants
+from shared.datetime_helper import DateTimeHelper
+from shared.error_handler import ErrorHandler
+from .gui_helpers import GUIHelpers
+from .log_redirector import LogRedirector
+from backend.main import main
 
 
 class WalletApp:
     
     def __init__(self):
-        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.config_file = os.path.join(self.base_dir, Constants.FOLDER_CONFIG, Constants.FILE_CONFIG)
         
         self._setup_main_window()

@@ -3,22 +3,22 @@ import os
 from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
-from constants import Constants
+from shared.constants import Constants
 
 
 class ConfigManager:
     
     def __init__(self, config_file: Optional[str] = None):
-        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.config_file = config_file or os.path.join(self.base_dir, Constants.FOLDER_CONFIG, Constants.FILE_CONFIG)
         self.config = self._load_config()
         
     def _load_config(self) -> Dict[str, Any]:
-        from error_handler import ErrorHandler
+        from shared.error_handler import ErrorHandler
         return ErrorHandler.safe_json_load(self.config_file, {})
     
     def save_config(self, config_data: Dict[str, Any]) -> bool:
-        from error_handler import ErrorHandler
+        from shared.error_handler import ErrorHandler
         if ErrorHandler.safe_json_save(config_data, self.config_file):
             self.config = config_data
             return True

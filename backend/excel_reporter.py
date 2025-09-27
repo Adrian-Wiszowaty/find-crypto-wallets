@@ -2,7 +2,7 @@ import os
 from typing import List, Dict, Any
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
-from config_manager import ConfigManager
+from .config_manager import ConfigManager
 
 
 class ExcelReporter:
@@ -18,7 +18,7 @@ class ExcelReporter:
         def format_date_for_filename(date_str):
             try:
                 from datetime import datetime
-                from constants import Constants
+                from shared.constants import Constants
                 dt = datetime.strptime(date_str, Constants.DATE_FORMAT)
                 return dt.strftime("%d-%m-%Y")
             except:

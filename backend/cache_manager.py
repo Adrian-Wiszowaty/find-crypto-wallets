@@ -2,7 +2,7 @@ import json
 import os
 import logging
 from typing import Dict, Any, Optional
-from config_manager import ConfigManager
+from .config_manager import ConfigManager
 
 
 class CacheManager:

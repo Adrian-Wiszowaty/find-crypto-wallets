@@ -1,8 +1,8 @@
 import time
 import logging
 from typing import List, Dict, Any, Tuple
-from api_client import ApiClient
-from constants import Constants
+from .api_client import ApiClient
+from shared.constants import Constants
 
 
 class BlockchainAnalyzer:

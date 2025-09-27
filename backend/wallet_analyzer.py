@@ -3,9 +3,9 @@ import os
 import logging
 from typing import Dict, List, Tuple, Any, Optional
 from datetime import datetime, timezone, timedelta
-from config_manager import ConfigManager
-from api_client import ApiClient
-from constants import Constants
+from .config_manager import ConfigManager
+from .api_client import ApiClient
+from shared.constants import Constants
 
 
 class WalletAnalyzer:

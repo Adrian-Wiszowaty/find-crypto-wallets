@@ -2,8 +2,8 @@ import requests
 import time
 import logging
 from typing import Dict, Any, List, Optional, Union
-from config_manager import ConfigManager
-from constants import Constants
+from .config_manager import ConfigManager
+from shared.constants import Constants
 
 
 class ApiClient:

@@ -34,11 +34,11 @@ class Constants:
     MAX_RETRIES = 3
     REQUEST_TIMEOUT = 10
     
-    FOLDER_WALLETS = "Wallets"
-    FOLDER_CACHE = "Cache"
-    FOLDER_LOGS = "Logs"
-    FOLDER_CONFIG = "Config"
-    FOLDER_IMAGES = "images"
+    FOLDER_WALLETS = "backend/wallets"
+    FOLDER_CACHE = "backend/cache"
+    FOLDER_LOGS = "backend/logs"
+    FOLDER_CONFIG = "shared/config"
+    FOLDER_IMAGES = "frontend/assets"
     
     FILE_CONFIG = "config.json"
     FILE_ERROR_LOG = "error_log.txt"

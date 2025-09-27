@@ -4,8 +4,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
 from typing import Tuple, List
-from constants import Constants
-from datetime_helper import DateTimeHelper
+from shared.constants import Constants
+from shared.datetime_helper import DateTimeHelper
 
 
 class GUIHelpers:
