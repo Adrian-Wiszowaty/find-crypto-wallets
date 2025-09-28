@@ -20,7 +20,6 @@ Wszystkie wyniki są eksportowane do pliku Excel zawierających historię transa
 - Python 3.10+
 - requests
 - openpyxl
-- tkinter (wbudowany w Python)
 - ttkbootstrap
 
 ## Instalacja
