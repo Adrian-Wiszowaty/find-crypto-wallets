@@ -16,6 +16,7 @@ class ApiConstants:
     MIN_FREQUENCY_VIOLATIONS = 5
     MIN_TRANSACTION_COUNT = 10
     MIN_USD_VALUE = 100.0
+    MIN_BALANCE_PERCENTAGE = 50
     
     API_MODULE_ACCOUNT = "account"
     API_MODULE_BLOCK = "block"
