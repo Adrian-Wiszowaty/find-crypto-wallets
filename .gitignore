@@ -1,18 +1,33 @@
+# VS Code
 .vscode/
+
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
-Logs/
-*.log
+
+# Virtual environments
 .env
 .venv
 env/
 venv/
 ENV/
-Cache/
+
+# Build artifacts
 dist/
 build/
 *.egg-info/
-Wallets/*
+
+# Application specific directories
+wallets/
+backend/logs/
+backend/cache/
+Cache/
+Logs/
+
+# Log files
+*.log
+
+# System files
 .DS_Store
 Thumbs.db
