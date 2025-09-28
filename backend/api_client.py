@@ -3,18 +3,18 @@ import time
 import logging
 from typing import Dict, Any, List, Optional, Union
 from .config_manager import ConfigManager
-from shared.constants import Constants
+from shared.constants.api_constants import ApiConstants
 
 class ApiClient:
 
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
-        self.api_key = Constants.ETHERSCAN_API_KEY
+        self.api_key = ApiConstants.ETHERSCAN_API_KEY
         self.network_config = config_manager.get_network_config()
         self.api_url = self.network_config["api_url"]
-        self.max_retries = Constants.MAX_RETRIES
-        self.delay_between_requests = Constants.DELAY_BETWEEN_REQUESTS
-        self.block_chunk_size = Constants.BLOCK_CHUNK_SIZE
+        self.max_retries = ApiConstants.MAX_RETRIES
+        self.delay_between_requests = ApiConstants.DELAY_BETWEEN_REQUESTS
+        self.block_chunk_size = ApiConstants.BLOCK_CHUNK_SIZE
         
     def _make_request_with_retry(self, url: str, params: Dict[str, Any], 
                                 retries: int = None) -> Optional[Dict[str, Any]]:
@@ -24,7 +24,7 @@ class ApiClient:
             
         for attempt in range(1, retries + 1):
             try:
-                response = requests.get(url, params=params, timeout=Constants.REQUEST_TIMEOUT)
+                response = requests.get(url, params=params, timeout=ApiConstants.REQUEST_TIMEOUT)
                 
                 if response.status_code == 200:
                     return response.json()
@@ -145,7 +145,7 @@ class ApiClient:
     
     def get_token_price_from_dexscreener(self, token_address: str) -> Union[float, str]:
 
-        url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
+        url = ApiConstants.DEXSCREENER_API_URL.format(token_address.lower())
         
         for attempt in range(1, 6):
             try:
@@ -182,7 +182,7 @@ class ApiClient:
     def get_native_token_usd_price(self) -> Union[float, str]:
 
         token_id = self.network_config["native_token_full_name"]
-        url = Constants.COINGECKO_API_URL
+        url = ApiConstants.COINGECKO_API_URL
         params = {
             "ids": token_id,
             "vs_currencies": "usd"

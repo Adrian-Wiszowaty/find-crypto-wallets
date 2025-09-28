@@ -5,17 +5,19 @@ from typing import Dict, List, Tuple, Any
 from datetime import datetime, timezone, timedelta
 from .config_manager import ConfigManager
 from .api_client import ApiClient
-from shared.constants import Constants
+from shared.constants.api_constants import ApiConstants
+from shared.constants.config_constants import ConfigConstants
+from shared.constants.message_constants import MessageConstants
 
 class WalletAnalyzer:
     
     def __init__(self, config_manager: ConfigManager, api_client: ApiClient):
         self.config_manager = config_manager
         self.api_client = api_client
-        self.frequency_interval_seconds = Constants.FREQUENCY_INTERVAL_SECONDS
-        self.min_frequency_violations = Constants.MIN_FREQUENCY_VIOLATIONS
-        self.min_transaction_count = Constants.MIN_TRANSACTION_COUNT
-        self.min_usd_value = Constants.MIN_USD_VALUE
+        self.frequency_interval_seconds = ApiConstants.FREQUENCY_INTERVAL_SECONDS
+        self.min_frequency_violations = ApiConstants.MIN_FREQUENCY_VIOLATIONS
+        self.min_transaction_count = ApiConstants.MIN_TRANSACTION_COUNT
+        self.min_usd_value = ApiConstants.MIN_USD_VALUE
         
         paths = config_manager.get_paths_config()
         self.cache_file = paths["cache_file"]
@@ -44,12 +46,12 @@ class WalletAnalyzer:
     def parse_date(self, date_str: str) -> int:
         
         try:
-            dt = datetime.strptime(date_str, Constants.DATE_FORMAT)
-            dt = dt - timedelta(hours=Constants.TIMEZONE_OFFSET_HOURS)
+            dt = datetime.strptime(date_str, ConfigConstants.DATE_FORMAT)
+            dt = dt - timedelta(hours=ConfigConstants.TIMEZONE_OFFSET_HOURS)
             dt = dt.replace(tzinfo=timezone.utc)
             return int(dt.timestamp())
         except Exception as e:
-            logging.error(f"{Constants.ERROR_INVALID_DATE_FORMAT} {date_str}: {e}")
+            logging.error(f"{MessageConstants.ERROR_INVALID_DATE_FORMAT} {date_str}: {e}")
             raise
     
     def _check_transaction_frequency(self, transactions: List[Dict[str, Any]]) -> bool:
@@ -262,8 +264,8 @@ class WalletAnalyzer:
                 native_value = "error"
                 usd_value = "error"
             
-            if usd_value != "error" and usd_value < Constants.MIN_USD_VALUE:
-                print(f"Portfel {wallet} odrzucony ({usd_value} USD < {Constants.MIN_USD_VALUE} USD).")
+            if usd_value != "error" and usd_value < ApiConstants.MIN_USD_VALUE:
+                print(f"Portfel {wallet} odrzucony ({usd_value} USD < {ApiConstants.MIN_USD_VALUE} USD).")
                 continue
             
             results.append({

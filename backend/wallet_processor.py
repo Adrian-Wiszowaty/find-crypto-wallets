@@ -2,37 +2,41 @@ import time
 import os
 import json
 import logging
-from shared.constants import Constants
 from backend.config_manager import ConfigManager
+from shared.constants.api_constants import ApiConstants
+from shared.constants.config_constants import ConfigConstants
+from shared.constants.file_constants import FileConstants
+from shared.constants.message_constants import MessageConstants
+from shared.constants.network_constants import NetworkConstants
 
 API_KEY_USED = ""
 API_URL = ""
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WALLETS_FOLDER = os.path.join(BASE_DIR, Constants.FOLDER_WALLETS)
-CACHE_FOLDER = os.path.join(BASE_DIR, Constants.FOLDER_CACHE)
-LOGS_FOLDER = os.path.join(BASE_DIR, Constants.FOLDER_LOGS)
-CACHE_FILE = os.path.join(CACHE_FOLDER, Constants.FILE_WALLET_CACHE)
+WALLETS_FOLDER = os.path.join(BASE_DIR, FileConstants.FOLDER_WALLETS)
+CACHE_FOLDER = os.path.join(BASE_DIR, FileConstants.FOLDER_CACHE)
+LOGS_FOLDER = os.path.join(BASE_DIR, FileConstants.FOLDER_LOGS)
+CACHE_FILE = os.path.join(CACHE_FOLDER, FileConstants.FILE_WALLET_CACHE)
 
-def load_json_config(config_file=os.path.join(BASE_DIR, Constants.FOLDER_CONFIG, Constants.FILE_CONFIG)):
+def load_json_config(config_file=os.path.join(BASE_DIR, FileConstants.FOLDER_CONFIG, FileConstants.FILE_CONFIG)):
     try:
         with open(config_file, "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        print(f"{Constants.ERROR_CONFIG_NOT_FOUND} {config_file}")
+        print(f"{MessageConstants.ERROR_CONFIG_NOT_FOUND} {config_file}")
     except Exception as e:
         print(f"Wystąpił błąd podczas ładowania pliku {config_file}: {e}")
     return {}
 
 config = load_json_config()
 
-NETWORK = config.get("NETWORK", Constants.DEFAULT_CONFIG["NETWORK"])
-T1_STR = config.get("T1_STR", Constants.DEFAULT_CONFIG["T1_STR"])
-T2_STR = config.get("T2_STR", Constants.DEFAULT_CONFIG["T2_STR"])
-T3_STR = config.get("T3_STR", Constants.DEFAULT_CONFIG["T3_STR"])
-TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", Constants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
+NETWORK = config.get("NETWORK", ConfigConstants.DEFAULT_CONFIG["NETWORK"])
+T1_STR = config.get("T1_STR", ConfigConstants.DEFAULT_CONFIG["T1_STR"])
+T2_STR = config.get("T2_STR", ConfigConstants.DEFAULT_CONFIG["T2_STR"])
+T3_STR = config.get("T3_STR", ConfigConstants.DEFAULT_CONFIG["T3_STR"])
+TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", ConfigConstants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
 
-API_KEY_USED = Constants.ETHERSCAN_API_KEY
+API_KEY_USED = ApiConstants.ETHERSCAN_API_KEY
 
 network_config = ConfigManager.get_network_config_by_name(NETWORK)
 API_URL = network_config["api_url"]
@@ -41,14 +45,14 @@ NATIVE_TOKEN_FULL_NAME = network_config["native_token_full_name"]
 NATIVE_ADDRESS = network_config["native_address"]
 
 if NETWORK == "BASE":
-    BASE_NATIVE_ADDRESS = Constants.WETH_ADDRESS_BASE
+    BASE_NATIVE_ADDRESS = NetworkConstants.WETH_ADDRESS_BASE
     WETH_ADDRESS = BASE_NATIVE_ADDRESS
 elif NETWORK == "ETH":
-    WETH_ADDRESS = Constants.WETH_ADDRESS_ETH
+    WETH_ADDRESS = NetworkConstants.WETH_ADDRESS_ETH
 else:
-    WBNB_ADDRESS = Constants.WBNB_ADDRESS_BSC
+    WBNB_ADDRESS = NetworkConstants.WBNB_ADDRESS_BSC
 
-LOG_FILE = os.path.join(LOGS_FOLDER, Constants.FILE_ERROR_LOG)
+LOG_FILE = os.path.join(LOGS_FOLDER, FileConstants.FILE_ERROR_LOG)
 
 os.makedirs(WALLETS_FOLDER, exist_ok=True)
 os.makedirs(LOGS_FOLDER, exist_ok=True)
@@ -77,11 +81,11 @@ def main():
         from shared.datetime_helper import DateTimeHelper
         
         fresh_config = load_json_config()
-        current_network = fresh_config.get("NETWORK", Constants.DEFAULT_CONFIG["NETWORK"])
-        current_t1_str = fresh_config.get("T1_STR", Constants.DEFAULT_CONFIG["T1_STR"])
-        current_t2_str = fresh_config.get("T2_STR", Constants.DEFAULT_CONFIG["T2_STR"])
-        current_t3_str = fresh_config.get("T3_STR", Constants.DEFAULT_CONFIG["T3_STR"])
-        current_token_address = fresh_config.get("TOKEN_CONTRACT_ADDRESS", Constants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
+        current_network = fresh_config.get("NETWORK", ConfigConstants.DEFAULT_CONFIG["NETWORK"])
+        current_t1_str = fresh_config.get("T1_STR", ConfigConstants.DEFAULT_CONFIG["T1_STR"])
+        current_t2_str = fresh_config.get("T2_STR", ConfigConstants.DEFAULT_CONFIG["T2_STR"])
+        current_t3_str = fresh_config.get("T3_STR", ConfigConstants.DEFAULT_CONFIG["T3_STR"])
+        current_token_address = fresh_config.get("TOKEN_CONTRACT_ADDRESS", ConfigConstants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
         
         print(f"Wybrana sieć: {current_network}")
         

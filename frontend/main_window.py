@@ -8,8 +8,11 @@ import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from backend.config_manager import ConfigManager
 from .log_redirector import LogRedirector
-from shared.constants import Constants
 from shared.datetime_helper import DateTimeHelper
+from shared.constants.config_constants import ConfigConstants
+from shared.constants.file_constants import FileConstants
+from shared.constants.gui_constants import GuiConstants
+from shared.constants.message_constants import MessageConstants
 
 class MainWindow:
     
@@ -17,8 +20,8 @@ class MainWindow:
         self.config_manager = ConfigManager()
         self.main_function = main_function
         
-        self.padx = Constants.GUI_PADDING_X
-        self.pady = Constants.GUI_PADDING_Y
+        self.padx = GuiConstants.GUI_PADDING_X
+        self.pady = GuiConstants.GUI_PADDING_Y
         
         self._setup_main_window()
         self._setup_styles()
@@ -28,7 +31,7 @@ class MainWindow:
     def _setup_main_window(self) -> None:
         
         self.root = ttk.Window(title="Find Wallets", themename="flatly")
-        self.root.minsize(Constants.GUI_MIN_WIDTH, Constants.GUI_MIN_HEIGHT)
+        self.root.minsize(GuiConstants.GUI_MIN_WIDTH, GuiConstants.GUI_MIN_HEIGHT)
         self.root.grid_columnconfigure(0, weight=1, uniform="equal")
         
         self._setup_icon()
@@ -36,16 +39,16 @@ class MainWindow:
     def _setup_icon(self) -> None:
         
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        icon_path = os.path.join(base_dir, Constants.FOLDER_IMAGES, Constants.FILE_APP_ICON)
+        icon_path = os.path.join(base_dir, FileConstants.FOLDER_IMAGES, FileConstants.FILE_APP_ICON)
         
         if os.path.exists(icon_path):
             try:
                 icon_image = PhotoImage(file=icon_path)
                 self.root.iconphoto(True, icon_image)
             except Exception as e:
-                print(f"{Constants.ERROR_ICON_LOAD_FAILED}: {e}")
+                print(f"{MessageConstants.ERROR_ICON_LOAD_FAILED}: {e}")
         else:
-            print(Constants.ERROR_ICON_NOT_FOUND)
+            print(MessageConstants.ERROR_ICON_NOT_FOUND)
     
     def _setup_styles(self) -> None:
         
@@ -67,11 +70,11 @@ class MainWindow:
     
     def _create_log_widget(self) -> None:
         
-        self.log_widget = Text(self.root, height=Constants.GUI_LOG_HEIGHT, width=Constants.GUI_LOG_WIDTH)
+        self.log_widget = Text(self.root, height=GuiConstants.GUI_LOG_HEIGHT, width=GuiConstants.GUI_LOG_WIDTH)
         self.log_widget.grid(row=0, column=0, padx=self.padx, pady=5, 
                            columnspan=2, sticky="ew")
-        self.log_widget.config(bg=Constants.GUI_LOG_BG_COLOR, fg=Constants.GUI_LOG_FG_COLOR, 
-                              insertbackground=Constants.GUI_LOG_INSERT_BG_COLOR)
+        self.log_widget.config(bg=GuiConstants.GUI_LOG_BG_COLOR, fg=GuiConstants.GUI_LOG_FG_COLOR, 
+                              insertbackground=GuiConstants.GUI_LOG_INSERT_BG_COLOR)
         
         sys.stdout = LogRedirector(self.log_widget)
     
@@ -240,7 +243,7 @@ class MainWindow:
         )
         self.network_combo.grid(row=0, column=1, padx=self.padx, pady=self.pady, sticky="w")
         
-        self.network_combo.set(Constants.DEFAULT_CONFIG["NETWORK"])
+        self.network_combo.set(ConfigConstants.DEFAULT_CONFIG["NETWORK"])
         
         self.run_button = ttk.Button(
             frame_network, text="Uruchom", width=35, style="danger.TButton",
@@ -340,15 +343,15 @@ class MainWindow:
         try:
             config = self.config_manager.config
             
-            token_address = config.get("TOKEN_CONTRACT_ADDRESS", Constants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
+            token_address = config.get("TOKEN_CONTRACT_ADDRESS", ConfigConstants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
             self.token_contract_entry.insert(0, token_address)
             
             network = config.get("NETWORK", "ETH")
             self.network_combo.set(network)
             
-            self._load_datetime_config("T1_STR", self.T1_widgets, Constants.DEFAULT_CONFIG["T1_STR"])
-            self._load_datetime_config("T2_STR", self.T2_widgets, Constants.DEFAULT_CONFIG["T2_STR"])
-            self._load_datetime_config("T3_STR", self.T3_widgets, Constants.DEFAULT_CONFIG["T3_STR"])
+            self._load_datetime_config("T1_STR", self.T1_widgets, ConfigConstants.DEFAULT_CONFIG["T1_STR"])
+            self._load_datetime_config("T2_STR", self.T2_widgets, ConfigConstants.DEFAULT_CONFIG["T2_STR"])
+            self._load_datetime_config("T3_STR", self.T3_widgets, ConfigConstants.DEFAULT_CONFIG["T3_STR"])
             
         except Exception as e:
             print(f"Błąd ładowania konfiguracji: {e}")

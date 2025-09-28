@@ -2,7 +2,7 @@ import time
 import logging
 from typing import List, Dict, Any, Tuple
 from .api_client import ApiClient
-from shared.constants import Constants
+from shared.constants.api_constants import ApiConstants
 
 class BlockchainAnalyzer:
     
@@ -54,7 +54,7 @@ class BlockchainAnalyzer:
         current_start = startblock
         
         while current_start <= endblock:
-            current_end = min(current_start + Constants.BLOCK_CHUNK_SIZE - 1, endblock)
+            current_end = min(current_start + ApiConstants.BLOCK_CHUNK_SIZE - 1, endblock)
             
             params = {
                 "module": "account",
@@ -85,14 +85,14 @@ class BlockchainAnalyzer:
                 logging.error(f"Błąd podczas przetwarzania danych dla bloków {current_start}-{current_end}: {e}")
             finally:
                 current_start = current_end + 1
-                time.sleep(Constants.DELAY_BETWEEN_REQUESTS)
+                time.sleep(ApiConstants.DELAY_BETWEEN_REQUESTS)
         
         return all_txs
     
     def get_wallet_transactions(self, wallet: str, count: int = 10, retries: int = None) -> List[Dict[str, Any]]:
         
         if retries is None:
-            retries = Constants.MAX_RETRIES
+            retries = ApiConstants.MAX_RETRIES
             
         params = {
             "module": "account",
