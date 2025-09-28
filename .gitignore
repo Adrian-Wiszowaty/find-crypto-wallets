@@ -1,33 +1,7 @@
-# VS Code
-.vscode/
-
-# Python cache
 __pycache__/
 *.py[cod]
-*$py.class
-
-# Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
-
-# Application specific directories
 wallets/
 backend/logs/
 backend/cache/
-Cache/
-Logs/
-
-# Log files
 *.log
-
-# System files
 .DS_Store
-Thumbs.db

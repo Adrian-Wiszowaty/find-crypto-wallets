@@ -226,22 +226,25 @@ class WalletApp:
     
     def _show_error_message(self, error_msg: str):
         
-        self._play_sound(success=False) 
+        self._play_sound(success=False)
         messagebox.showerror("Błąd", f"Wystąpił błąd: {error_msg}")
     
     def _play_sound(self, success: bool = True):
         
-        try:
-            if os.name == 'nt':
-                import winsound
-                freq, dur = (1000, 500) if success else (200, 500)
-                winsound.Beep(freq, dur)
-            else:
-                sound_file = ("/System/Library/Sounds/Pop.aiff" if success 
-                            else "/System/Library/Sounds/Basso.aiff")
-                os.system(f"afplay {sound_file}")
-        except Exception:
-            pass
+        def play_async():
+            try:
+                if os.name == 'nt':
+                    import winsound
+                    freq, dur = (1000, 500) if success else (200, 500)
+                    winsound.Beep(freq, dur)
+                else:
+                    sound_file = ("/System/Library/Sounds/Pop.aiff" if success 
+                                else "/System/Library/Sounds/Basso.aiff")
+                    os.system(f"afplay {sound_file}")
+            except Exception:
+                pass
+        
+        threading.Thread(target=play_async, daemon=True).start()
     
     def _load_config(self):
         
