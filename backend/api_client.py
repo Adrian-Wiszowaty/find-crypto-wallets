@@ -5,9 +5,8 @@ from typing import Dict, Any, List, Optional, Union
 from .config_manager import ConfigManager
 from shared.constants import Constants
 
-
 class ApiClient:
-    
+
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
         self.api_key = Constants.ETHERSCAN_API_KEY
@@ -19,6 +18,7 @@ class ApiClient:
         
     def _make_request_with_retry(self, url: str, params: Dict[str, Any], 
                                 retries: int = None) -> Optional[Dict[str, Any]]:
+
         if retries is None:
             retries = self.max_retries
             
@@ -45,18 +45,20 @@ class ApiClient:
         return None
     
     def _validate_etherscan_response(self, data: Dict[str, Any]) -> bool:
+
         if not isinstance(data, dict) or "result" not in data:
             return False
             
         if data.get("status") == "1" or isinstance(data["result"], list):
             return True
             
-        if data.get("message") in ["No transactions found", "No records found"]:
+        if data.get("status") == "0" and "No transactions found" in str(data.get("message", "")):
             return True
             
         return False
     
     def etherscan_api_request(self, params: Dict[str, Any]) -> Dict[str, Any]:
+
         params["apikey"] = self.api_key
         
         for attempt in range(1, self.max_retries + 1):
@@ -72,6 +74,7 @@ class ApiClient:
         raise Exception("Failed to get valid response from Etherscan API")
     
     def get_block_by_timestamp(self, timestamp: int, closest: str = "before") -> int:
+
         params = {
             "module": "block",
             "action": "getblocknobytime",
@@ -88,6 +91,7 @@ class ApiClient:
     
     def get_token_transactions(self, contract_address: str, start_block: int, 
                               end_block: int) -> List[Dict[str, Any]]:
+
         all_transactions = []
         current_start = start_block
         
@@ -122,6 +126,7 @@ class ApiClient:
         return all_transactions
     
     def get_wallet_transactions(self, wallet_address: str, count: int = 10) -> List[Dict[str, Any]]:
+
         params = {
             "module": "account",
             "action": "txlist",
@@ -139,6 +144,7 @@ class ApiClient:
             return []
     
     def get_token_price_from_dexscreener(self, token_address: str) -> Union[float, str]:
+
         url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
         
         for attempt in range(1, 6):
@@ -174,6 +180,7 @@ class ApiClient:
         return "error"
     
     def get_native_token_usd_price(self) -> Union[float, str]:
+
         token_id = self.network_config["native_token_full_name"]
         url = Constants.COINGECKO_API_URL
         params = {

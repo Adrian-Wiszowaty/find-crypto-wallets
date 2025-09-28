@@ -1,13 +1,13 @@
 import logging
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional
 from functools import wraps
-
 
 class ErrorHandler:
     
     @staticmethod
     def safe_execute(func: Callable, *args, default_return=None, 
                     log_error: bool = True, error_message: str = None, **kwargs) -> Any:
+        
         try:
             return func(*args, **kwargs)
         except Exception as e:
@@ -18,6 +18,7 @@ class ErrorHandler:
     
     @staticmethod
     def safe_json_load(file_path: str, default_return: dict = None) -> dict:
+        
         if default_return is None:
             default_return = {}
             
@@ -41,6 +42,7 @@ class ErrorHandler:
     
     @staticmethod
     def safe_json_save(data: dict, file_path: str, create_dirs: bool = True) -> bool:
+        
         try:
             import json
             import os
@@ -59,6 +61,7 @@ class ErrorHandler:
     @staticmethod
     def retry_on_exception(max_retries: int = 3, delay: float = 0.1, 
                           exceptions: tuple = (Exception,)) -> Callable:
+        
         def decorator(func: Callable) -> Callable:
             @wraps(func)
             def wrapper(*args, **kwargs):
@@ -84,6 +87,7 @@ class ErrorHandler:
     @staticmethod
     def validate_numeric_input(value: Any, min_value: float = None, 
                              max_value: float = None) -> Optional[float]:
+        
         try:
             num_value = float(value)
             

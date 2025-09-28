@@ -1,10 +1,9 @@
 import requests
 import time
 import logging
-from typing import Union, Dict, Any, Optional
+from typing import Union, Dict
 from .config_manager import ConfigManager
 from shared.constants import Constants
-
 
 class ExchangeRateService:
     
@@ -162,6 +161,7 @@ class ExchangeRateService:
         return "error"
     
     def calculate_token_value_in_usd(self, token_amount: float, token_address: str) -> Dict[str, Union[float, str]]:
+        
         result = {
             "native_value": "error",
             "usd_value": "error", 
@@ -170,6 +170,7 @@ class ExchangeRateService:
         }
         
         try:
+                        
             exchange_rate = self.get_exchange_rate(token_address)
             result["exchange_rate"] = exchange_rate
             
@@ -197,6 +198,7 @@ class ExchangeRateService:
             return result
     
     def get_multiple_token_rates(self, token_addresses: list) -> Dict[str, Union[float, str]]:
+        
         rates = {}
         
         for i, token_address in enumerate(token_addresses):
@@ -215,6 +217,7 @@ class ExchangeRateService:
                 isinstance(native_usd_rate, (int, float)))
     
     def get_token_name(self, token_address: str, retries: int = None) -> Union[str, str]:
+        
         if retries is None:
             retries = self.max_retries
             

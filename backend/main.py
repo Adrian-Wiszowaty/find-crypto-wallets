@@ -1,12 +1,7 @@
-#!/usr/bin/env python3
-import requests
 import time
 import os
 import json
 import logging
-from openpyxl import Workbook
-from openpyxl.styles import Font
-from datetime import datetime, timezone, timedelta
 from shared.constants import Constants
 
 API_KEY_USED = ""
@@ -18,7 +13,6 @@ CACHE_FOLDER = os.path.join(BASE_DIR, Constants.FOLDER_CACHE)
 LOGS_FOLDER = os.path.join(BASE_DIR, Constants.FOLDER_LOGS)
 CACHE_FILE = os.path.join(CACHE_FOLDER, Constants.FILE_WALLET_CACHE)
 
-
 def load_json_config(config_file=os.path.join(BASE_DIR, Constants.FOLDER_CONFIG, Constants.FILE_CONFIG)):
     try:
         with open(config_file, "r") as f:
@@ -28,7 +22,6 @@ def load_json_config(config_file=os.path.join(BASE_DIR, Constants.FOLDER_CONFIG,
     except Exception as e:
         print(f"An error occurred while loading file {config_file}: {e}")
     return {}
-
 
 config = load_json_config()
 
@@ -60,17 +53,18 @@ os.makedirs(WALLETS_FOLDER, exist_ok=True)
 os.makedirs(LOGS_FOLDER, exist_ok=True)
 os.makedirs(CACHE_FOLDER, exist_ok=True)
 
-
 logging.basicConfig(
     filename=LOG_FILE,
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    force=True
 )
-
+logging.getLogger().setLevel(logging.ERROR)
 
 start_time = time.time()
 
 def main():
+    
     try:
         from .config_manager import ConfigManager
         from .api_client import ApiClient
@@ -102,17 +96,14 @@ def main():
         else:
             print(f"Wybrany token: {current_token_address} (nie udało się pobrać nazwy)")
             token_name = current_token_address
-        
-        print("Rozpoczynam działanie skryptu...")
-        
+                
         wallet_analyzer = WalletAnalyzer(config_manager, api_client)
         excel_reporter = ExcelReporter(config_manager)
         
         try:
             DateTimeHelper.validate_date_range(current_t1_str, current_t2_str, current_t3_str)
-            print("✅ Walidacja przedziałów czasowych przeszła pomyślnie")
         except ValueError as e:
-            print(f"❌ Date validation error: {e}")
+            print(f"Date validation error: {e}")
             raise
         
         t1_unix = DateTimeHelper.parse_date(current_t1_str)
@@ -177,9 +168,8 @@ def main():
         cache_manager.save_frequency_cache(wallet_analyzer.frequency_cache)
         
         output_filename = excel_reporter.generate_report(final_results, token_name, current_t1_str, current_t2_str, current_t3_str)
-        print(f"Raport zapisany do:")
-        print(output_filename)
-        
+        print(f"Raport zapisany do katalogu 'wallets'")
+
         elapsed_time = time.time() - start_time
         execution_time_formatted = DateTimeHelper.format_execution_time(elapsed_time)
         print(f"Czas wykonania skryptu do momentu zapisu pliku: {execution_time_formatted}")

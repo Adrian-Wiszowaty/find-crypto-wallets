@@ -4,14 +4,13 @@ import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
 from typing import Tuple, List
-from shared.constants import Constants
 from shared.datetime_helper import DateTimeHelper
-
 
 class GUIHelpers:
     
     @staticmethod
     def create_time_combobox(parent: tk.Widget, values: List[str]) -> ttk.Combobox:
+        
         combo = ttk.Combobox(parent, values=values, width=3, state="readonly", style="info.TCombobox")
         combo.current(0)
         return combo
@@ -19,6 +18,7 @@ class GUIHelpers:
     @staticmethod
     def create_datetime_section(parent: tk.Widget, label_text: str, row: int, 
                               initial_date: datetime = None, padx: int = 5, pady: int = 5) -> Tuple[DateEntry, ttk.Combobox, ttk.Combobox, ttk.Combobox]:
+        
         frame = ttk.Frame(parent)
         frame.grid(row=row, column=0, padx=padx, pady=pady, sticky="ew")
         
@@ -54,6 +54,7 @@ class GUIHelpers:
 
     @staticmethod
     def copy_datetime_values(source: Tuple, target: Tuple) -> None:
+        
         source_date, source_hour, source_minute, source_second = source
         target_date, target_hour, target_minute, target_second = target
         
@@ -65,6 +66,7 @@ class GUIHelpers:
 
     @staticmethod
     def get_datetime_string(widgets: Tuple) -> str:
+        
         date_entry, hour_combo, minute_combo, second_combo = widgets
         date_str = date_entry.entry.get()
         
@@ -82,6 +84,7 @@ class GUIHelpers:
     
     @staticmethod
     def setup_icon(window: tk.Tk, icon_path: str) -> bool:
+        
         try:
             if os.path.exists(icon_path):
                 from tkinter import PhotoImage
@@ -97,6 +100,7 @@ class GUIHelpers:
     
     @staticmethod
     def configure_ttk_style() -> None:
+        
         style = ttk.Style()
         style.configure("info.TCombobox",
                        fieldbackground="white",
@@ -106,6 +110,7 @@ class GUIHelpers:
     
     @staticmethod
     def validate_datetime_widgets(t1_widgets: Tuple, t2_widgets: Tuple, t3_widgets: Tuple) -> bool:
+        
         try:
             t1_str = GUIHelpers.get_datetime_string(t1_widgets)
             t2_str = GUIHelpers.get_datetime_string(t2_widgets)

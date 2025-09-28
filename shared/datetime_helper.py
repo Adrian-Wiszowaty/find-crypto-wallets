@@ -3,7 +3,6 @@ from datetime import datetime, timezone, timedelta
 from typing import Union
 from constants import Constants
 
-
 class DateTimeHelper:
     
     @staticmethod
@@ -24,11 +23,13 @@ class DateTimeHelper:
     
     @staticmethod
     def format_execution_time(seconds: float) -> str:
+        
         minutes, secs = divmod(seconds, 60)
         return f"{int(minutes):02d}:{int(secs):02d}"
     
     @staticmethod
     def timestamp_to_readable(timestamp: Union[int, str]) -> str:
+        
         try:
             if isinstance(timestamp, str):
                 timestamp = int(timestamp)
@@ -41,10 +42,12 @@ class DateTimeHelper:
     
     @staticmethod
     def get_current_timestamp() -> int:
+        
         return int(datetime.now(timezone.utc).timestamp())
     
     @staticmethod
     def validate_date_range(t1_str: str, t2_str: str, t3_str: str) -> bool:
+        
         try:
             t1 = DateTimeHelper.parse_date(t1_str)
             t2 = DateTimeHelper.parse_date(t2_str)

@@ -1,4 +1,3 @@
-import json
 import os
 import threading
 import sys
@@ -15,10 +14,10 @@ from .gui_helpers import GUIHelpers
 from .log_redirector import LogRedirector
 from backend.main import main
 
-
 class WalletApp:
     
     def __init__(self):
+
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.config_file = os.path.join(self.base_dir, Constants.FOLDER_CONFIG, Constants.FILE_CONFIG)
         
@@ -27,6 +26,7 @@ class WalletApp:
         self._load_config()
     
     def _setup_main_window(self):
+        
         self.root = ttk.Window(title=Constants.APP_TITLE, themename=Constants.GUI_THEME)
         
         icon_path = os.path.join(self.base_dir, Constants.FOLDER_IMAGES, Constants.FILE_APP_ICON)
@@ -38,6 +38,7 @@ class WalletApp:
         GUIHelpers.configure_ttk_style()
     
     def _setup_gui_components(self):
+        
         self._create_log_section()
         self._create_network_section()
         self._create_token_section()
@@ -45,6 +46,7 @@ class WalletApp:
         self._create_control_buttons()
         
     def _create_log_section(self):
+        
         self.log_widget = Text(self.root, height=Constants.GUI_LOG_HEIGHT, width=Constants.GUI_LOG_WIDTH)
         self.log_widget.grid(row=0, column=0, padx=Constants.GUI_PADDING_X, pady=5, 
                            columnspan=2, sticky="ew")
@@ -54,6 +56,7 @@ class WalletApp:
         sys.stdout = LogRedirector(self.log_widget)
     
     def _create_network_section(self):
+        
         frame_network = ttk.Labelframe(self.root, text="Sieć blockchain")
         frame_network.grid(row=1, column=0, padx=Constants.GUI_PADDING_X, 
                          pady=Constants.GUI_PADDING_Y, sticky="ew")
@@ -71,6 +74,7 @@ class WalletApp:
                          pady=Constants.GUI_PADDING_Y, sticky="ew")
     
     def _create_token_section(self):
+        
         frame_contract = ttk.Labelframe(self.root, text="Token")
         frame_contract.grid(row=2, column=0, padx=Constants.GUI_PADDING_X,
                           pady=Constants.GUI_PADDING_Y, sticky="ew")
@@ -87,6 +91,7 @@ class WalletApp:
         self.token_contract_entry.insert(0, Constants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
     
     def _create_datetime_sections(self):
+        
         frame_t1 = ttk.Labelframe(self.root, text="Data początkowa - T1")
         frame_t1.grid(row=3, column=0, padx=Constants.GUI_PADDING_X,
                      pady=Constants.GUI_PADDING_Y, sticky="ew")
@@ -127,6 +132,7 @@ class WalletApp:
                               pady=Constants.GUI_PADDING_Y, columnspan=2, sticky="ew")
     
     def _create_control_buttons(self):
+        
         frame_buttons = ttk.Frame(self.root)
         frame_buttons.grid(row=6, column=0, padx=Constants.GUI_PADDING_X,
                          pady=Constants.GUI_PADDING_Y, sticky="ew")
@@ -143,19 +149,24 @@ class WalletApp:
                          pady=Constants.GUI_PADDING_Y, sticky="ew")
     
     def _copy_t1_to_all(self):
+        
         GUIHelpers.copy_datetime_values(self.T1_widgets, self.T2_widgets)
         GUIHelpers.copy_datetime_values(self.T1_widgets, self.T3_widgets)
     
     def _copy_t1_to_t2(self):
+        
         GUIHelpers.copy_datetime_values(self.T1_widgets, self.T2_widgets)
     
     def _copy_t2_to_t3(self):
+        
         GUIHelpers.copy_datetime_values(self.T2_widgets, self.T3_widgets)
     
     def _save_and_run(self):
+        
         self.run_button.config(state="disabled")
         
         try:
+
             network = self.network_var.get()
             T1_str = GUIHelpers.get_datetime_string(self.T1_widgets)
             T2_str = GUIHelpers.get_datetime_string(self.T2_widgets) 
@@ -201,6 +212,7 @@ class WalletApp:
             self.run_button.config(state="normal")
     
     def _run_analysis(self):
+        
         try:
             main()
             self._show_success_message()
@@ -208,14 +220,17 @@ class WalletApp:
             self._show_error_message(str(e))
     
     def _show_success_message(self):
+        
         self._play_sound(success=True)
         messagebox.showinfo("Sukces", "Operacja zakończona pomyślnie!")
     
     def _show_error_message(self, error_msg: str):
+        
         self._play_sound(success=False) 
         messagebox.showerror("Błąd", f"Wystąpił błąd: {error_msg}")
     
     def _play_sound(self, success: bool = True):
+        
         try:
             if os.name == 'nt':
                 import winsound
@@ -229,6 +244,7 @@ class WalletApp:
             pass
     
     def _load_config(self):
+        
         config = ErrorHandler.safe_json_load(self.config_file, Constants.DEFAULT_CONFIG)
         
         self.network_var.set(config.get("NETWORK", Constants.DEFAULT_CONFIG["NETWORK"]))
@@ -242,6 +258,7 @@ class WalletApp:
         self._load_datetime_config("T3_STR", self.T3_widgets, config)
     
     def _load_datetime_config(self, config_key: str, widgets: tuple, config: dict):
+        
         try:
             date_str = config.get(config_key, Constants.DEFAULT_CONFIG[config_key])
             date_obj = datetime.strptime(date_str, Constants.DATE_FORMAT)
@@ -259,19 +276,19 @@ class WalletApp:
             print(f"Error loading configuration {config_key}: {e}")
     
     def run(self):
+        
         try:
             self.root.mainloop()
         except Exception as e:
             print(f"Application error: {e}")
 
-
 def main_app():
+    
     try:
         app = WalletApp()
         app.run()
     except Exception as e:
         print(f"Critical application error: {e}")
-
 
 if __name__ == "__main__":
     main_app()

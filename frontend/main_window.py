@@ -1,20 +1,15 @@
-import json
 import os
 import sys
 import threading
 import tkinter as tk
-from datetime import datetime
 from tkinter import Text, messagebox, PhotoImage
 from typing import Tuple, Callable
-
 import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
-
 from backend.config_manager import ConfigManager
 from .log_redirector import LogRedirector
 from shared.constants import Constants
 from shared.datetime_helper import DateTimeHelper
-
 
 class MainWindow:
     
@@ -31,6 +26,7 @@ class MainWindow:
         self._load_saved_config()
     
     def _setup_main_window(self) -> None:
+        
         self.root = ttk.Window(title="Find Wallets", themename="flatly")
         self.root.minsize(Constants.GUI_MIN_WIDTH, Constants.GUI_MIN_HEIGHT)
         self.root.grid_columnconfigure(0, weight=1, uniform="equal")
@@ -38,6 +34,7 @@ class MainWindow:
         self._setup_icon()
     
     def _setup_icon(self) -> None:
+        
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         icon_path = os.path.join(base_dir, Constants.FOLDER_IMAGES, Constants.FILE_APP_ICON)
         
@@ -51,6 +48,7 @@ class MainWindow:
             print(Constants.ERROR_ICON_NOT_FOUND)
     
     def _setup_styles(self) -> None:
+        
         style = ttk.Style()
         style.configure(
             "info.TCombobox",
@@ -61,12 +59,14 @@ class MainWindow:
         style.map("info.TCombobox", fieldbackground=[("readonly", "white")])
     
     def _setup_widgets(self) -> None:
+        
         self._create_log_widget()
         self._create_token_section()
         self._create_datetime_sections()
         self._create_network_section()
     
     def _create_log_widget(self) -> None:
+        
         self.log_widget = Text(self.root, height=Constants.GUI_LOG_HEIGHT, width=Constants.GUI_LOG_WIDTH)
         self.log_widget.grid(row=0, column=0, padx=self.padx, pady=5, 
                            columnspan=2, sticky="ew")
@@ -76,6 +76,7 @@ class MainWindow:
         sys.stdout = LogRedirector(self.log_widget)
     
     def _create_token_section(self) -> None:
+        
         frame_contract = ttk.Labelframe(self.root, text="Token")
         frame_contract.grid(row=1, column=0, padx=self.padx, pady=self.pady, sticky="ew")
         frame_contract.grid_columnconfigure(1, weight=1)
@@ -90,6 +91,7 @@ class MainWindow:
         )
     
     def _create_time_combobox(self, parent: ttk.Widget, values: list) -> ttk.Combobox:
+        
         combo = ttk.Combobox(
             parent, values=values, width=3, 
             state="readonly", style="info.TCombobox"
@@ -98,6 +100,7 @@ class MainWindow:
         return combo
     
     def _create_datetime_section(self, parent: ttk.Widget, row: int) -> Tuple[DateEntry, ttk.Combobox, ttk.Combobox, ttk.Combobox]:
+        
         for col in range(5):
             parent.grid_columnconfigure(col, weight=0)
         
@@ -130,6 +133,7 @@ class MainWindow:
         return date_entry, hour_combo, minute_combo, second_combo
     
     def _copy_datetime(self, source: Tuple, target: Tuple) -> None:
+        
         source_date, source_hour, source_minute, source_second = source
         target_date, target_hour, target_minute, target_second = target
         
@@ -139,6 +143,7 @@ class MainWindow:
         target_second.set(source_second.get())
     
     def _create_datetime_sections(self) -> None:
+        
         frame_t1 = ttk.Labelframe(self.root, text="T1 (Rozpoczęcie zakupów)")
         frame_t1.grid(row=2, column=0, padx=self.padx, pady=self.pady, sticky="ew")
         
@@ -173,16 +178,20 @@ class MainWindow:
         copy_t2_to_t3_button.grid(row=0, column=4, padx=self.padx, pady=self.pady, sticky="ew")
     
     def _copy_t1_to_all(self) -> None:
+        
         self._copy_datetime(self.T1_widgets, self.T2_widgets)
         self._copy_datetime(self.T1_widgets, self.T3_widgets)
     
     def _copy_t1_to_t2(self) -> None:
+        
         self._copy_datetime(self.T1_widgets, self.T2_widgets)
     
     def _copy_t2_to_t3(self) -> None:
+        
         self._copy_datetime(self.T2_widgets, self.T3_widgets)
         
     def _validate_datetime_range_realtime(self) -> None:
+        
         try:
             t1_str = self._get_datetime_string(self.T1_widgets)
             t2_str = self._get_datetime_string(self.T2_widgets)
@@ -195,6 +204,7 @@ class MainWindow:
                 delattr(self, '_warning_label')
                 
         except ValueError:
+
             if not hasattr(self, '_warning_label'):
                 self._warning_label = ttk.Label(
                     self.root, 
@@ -204,9 +214,11 @@ class MainWindow:
                 )
                 self._warning_label.grid(row=5, column=0, padx=self.padx, pady=5, sticky="ew")
         except Exception:
+
             pass
     
     def _create_network_section(self) -> None:
+        
         frame_network = ttk.Frame(self.root)
         frame_network.grid(row=5, column=0, padx=self.padx, pady=self.pady, sticky="ew")
         
@@ -237,12 +249,14 @@ class MainWindow:
         self.run_button.grid(row=0, column=3, padx=self.padx, pady=self.pady, sticky="e")
     
     def _get_datetime_string(self, widgets: Tuple) -> str:
+        
         date_entry, hour_combo, minute_combo, second_combo = widgets
         date_str = date_entry.entry.get()
         time_str = f"{hour_combo.get()}:{minute_combo.get()}:{second_combo.get()}"
         return f"{date_str} {time_str}"
     
     def _save_config(self) -> bool:
+        
         try:
             config_data = {
                 "TOKEN_CONTRACT_ADDRESS": self.token_contract_entry.get().strip(),
@@ -258,6 +272,7 @@ class MainWindow:
             return False
     
     def _validate_input(self) -> bool:
+        
         if not self.token_contract_entry.get().strip():
             messagebox.showerror("Błąd", "Proszę podać adres kontraktu tokena!")
             return False
@@ -278,6 +293,7 @@ class MainWindow:
         return True
     
     def _on_run_clicked(self) -> None:
+        
         if not self._validate_input():
             return
         
@@ -291,6 +307,7 @@ class MainWindow:
             self._start_process_thread()
     
     def _start_process_thread(self) -> None:
+        
         self.run_button.config(state="disabled", text="Uruchomiono...")
         
         def run_process():
@@ -301,21 +318,25 @@ class MainWindow:
                 print(f"Error during execution: {e}")
                 self._show_completion_message(success=False, error_msg=str(e))
             finally:
+
                 self.root.after(0, self._reset_run_button)
         
         thread = threading.Thread(target=run_process, daemon=True)
         thread.start()
     
     def _reset_run_button(self) -> None:
+        
         self.run_button.config(state="normal", text="Uruchom")
     
     def _show_completion_message(self, success: bool = True, error_msg: str = "") -> None:
+        
         if success:
-            print("\\n✅ Proces zakończony pomyślnie!")
+            print("Proces zakończony pomyślnie!")
         else:
-            print(f"\\n❌ Proces zakończony błędem: {error_msg}")
+            print(f"Proces zakończony błędem: {error_msg}")
     
     def _load_saved_config(self) -> None:
+        
         try:
             config = self.config_manager.config
             
@@ -333,6 +354,7 @@ class MainWindow:
             print(f"Error loading configuration: {e}")
     
     def _load_datetime_config(self, config_key: str, widgets: Tuple, default: str) -> None:
+        
         try:
             datetime_str = self.config_manager.get(config_key, default)
             date_part, time_part = datetime_str.split(" ", 1)
@@ -349,4 +371,5 @@ class MainWindow:
             print(f"Error loading {config_key}: {e}")
     
     def run(self) -> None:
+        
         self.root.mainloop()

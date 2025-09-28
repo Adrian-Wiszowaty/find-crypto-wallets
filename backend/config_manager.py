@@ -1,23 +1,24 @@
-import json
 import os
 from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
 from shared.constants import Constants
 
-
 class ConfigManager:
     
     def __init__(self, config_file: Optional[str] = None):
+
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.config_file = config_file or os.path.join(self.base_dir, Constants.FOLDER_CONFIG, Constants.FILE_CONFIG)
         self.config = self._load_config()
         
     def _load_config(self) -> Dict[str, Any]:
+        
         from shared.error_handler import ErrorHandler
         return ErrorHandler.safe_json_load(self.config_file, {})
     
     def save_config(self, config_data: Dict[str, Any]) -> bool:
+        
         from shared.error_handler import ErrorHandler
         if ErrorHandler.safe_json_save(config_data, self.config_file):
             self.config = config_data
@@ -25,16 +26,20 @@ class ConfigManager:
         return False
     
     def get(self, key: str, default: Any = None) -> Any:
+        
         return self.config.get(key, default)
     
     def set(self, key: str, value: Any) -> None:
+        
         self.config[key] = value
     
     def get_network_config(self) -> Dict[str, str]:
+        
         network = self.get("NETWORK", Constants.DEFAULT_CONFIG["NETWORK"])
         return Constants.get_network_config(network)
     
     def validate_config(self) -> bool:
+        
         required_fields = list(Constants.DEFAULT_CONFIG.keys())
         
         for field in required_fields:
@@ -58,6 +63,7 @@ class ConfigManager:
         return True
     
     def get_paths_config(self) -> Dict[str, str]:
+        
         return {
             "base_dir": self.base_dir,
             "wallets_folder": os.path.join(self.base_dir, Constants.FOLDER_WALLETS),
@@ -68,6 +74,7 @@ class ConfigManager:
         }
     
     def ensure_directories(self) -> None:
+        
         paths = self.get_paths_config()
         directories = [paths["wallets_folder"], paths["cache_folder"], paths["logs_folder"]]
         

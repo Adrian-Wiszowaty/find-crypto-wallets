@@ -1,9 +1,8 @@
 import os
 from typing import List, Dict, Any
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Font
 from .config_manager import ConfigManager
-
 
 class ExcelReporter:
     
@@ -15,6 +14,7 @@ class ExcelReporter:
         os.makedirs(self.wallets_folder, exist_ok=True)
     
     def _get_unique_filename(self, token_name: str, t1_str: str, t2_str: str, t3_str: str) -> str:
+        
         def format_date_for_filename(date_str):
             try:
                 from datetime import datetime
@@ -22,6 +22,7 @@ class ExcelReporter:
                 dt = datetime.strptime(date_str, Constants.DATE_FORMAT)
                 return dt.strftime("%d-%m-%Y")
             except:
+
                 return date_str.replace(" ", "_").replace(":", "").replace("-", "")
         
         t1_formatted = format_date_for_filename(t1_str)
@@ -43,6 +44,7 @@ class ExcelReporter:
             suffix += 1
     
     def _create_header_info(self, token_name: str = None) -> List[str]:
+        
         config = self.config_manager.config
         
         header_lines = [
@@ -59,6 +61,7 @@ class ExcelReporter:
         return header_lines
     
     def _format_cell_value(self, value: Any, column_key: str) -> Any:
+        
         if column_key in ["purchased", "final_balance", "native_value", "usd_value"]:
             try:
                 return float(value) if value != "error" else value
@@ -68,6 +71,7 @@ class ExcelReporter:
         return value
     
     def _auto_adjust_column_width(self, worksheet) -> None:
+        
         for column in worksheet.columns:
             max_length = 0
             column_letter = column[0].column_letter
@@ -80,6 +84,7 @@ class ExcelReporter:
             worksheet.column_dimensions[column_letter].width = min(max_length + 2, 50)
     
     def generate_report(self, results: List[Dict[str, Any]], token_name: str, t1_str: str, t2_str: str, t3_str: str) -> str:
+        
         filename = self._get_unique_filename(token_name, t1_str, t2_str, t3_str)
         
         workbook = Workbook()
@@ -87,7 +92,6 @@ class ExcelReporter:
         worksheet.title = "Wallet Analysis"
         
         current_row = 1
-        
         
         config_data = [
             ("", self.config_manager.config.get('TOKEN_CONTRACT_ADDRESS', 'N/A')),
@@ -106,7 +110,7 @@ class ExcelReporter:
         current_row += 2
         
         if results:
-            
+
             cell = worksheet.cell(row=current_row, column=1, value="NR")
             cell.font = Font(bold=True)
             
@@ -118,6 +122,7 @@ class ExcelReporter:
             current_row += 1
             
             for row_num, result in enumerate(results, start=1):
+
                 worksheet.cell(row=current_row, column=1, value=row_num)
                 
                 for col_idx, key in enumerate(column_headers, start=2):
@@ -127,14 +132,18 @@ class ExcelReporter:
                 
                 current_row += 1
         else:
+
             cell = worksheet.cell(row=current_row, column=1, value="Brak danych")
             cell.font = Font(italic=True, color="FF0000")
         
         worksheet.column_dimensions['A'].width = 5
+
         worksheet.column_dimensions['B'].width = 60
         
         if results:
+
             self._auto_adjust_column_width(worksheet)
+
             worksheet.column_dimensions['A'].width = 5
             worksheet.column_dimensions['B'].width = 60
         
@@ -145,10 +154,10 @@ class ExcelReporter:
             raise Exception(f"Error saving Excel report: {e}")
 
     def write_excel(self, filename: str, header_lines: List[str], rows: List[Dict[str, Any]]) -> None:
+        
         wb = Workbook()
         ws = wb.active
         current_row = 1
-        
         
         for header in header_lines:
             if ":" in header:
@@ -160,6 +169,7 @@ class ExcelReporter:
         current_row += 2
         
         if rows:
+
             cell = ws.cell(row=current_row, column=1, value="WYNIKI ANALIZY PORTFELI")
             cell.font = Font(bold=True, size=14)
             current_row += 1
@@ -176,6 +186,7 @@ class ExcelReporter:
             current_row += 1
             
             for row_num, row in enumerate(rows, start=1):
+
                 ws.cell(row=current_row, column=1, value=row_num)
                 
                 for col, key in enumerate(fieldnames, start=2):
@@ -189,6 +200,7 @@ class ExcelReporter:
                 current_row += 1
             
             ws.column_dimensions['A'].width = 5
+
             for col in ws.columns:
                 max_length = 0
                 col_letter = col[0].column_letter
@@ -208,6 +220,7 @@ class ExcelReporter:
         wb.save(filename)
     
     def generate_summary_statistics(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+        
         if not results:
             return {
                 "total_wallets": 0,
@@ -253,6 +266,7 @@ class ExcelReporter:
         }
     
     def print_summary(self, results: List[Dict[str, Any]], execution_time: str = None) -> None:
+        
         stats = self.generate_summary_statistics(results)
         
         print("\n" + "="*50)

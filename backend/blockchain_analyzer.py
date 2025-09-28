@@ -4,7 +4,6 @@ from typing import List, Dict, Any, Tuple
 from .api_client import ApiClient
 from shared.constants import Constants
 
-
 class BlockchainAnalyzer:
     
     def __init__(self, api_client: ApiClient):
@@ -12,6 +11,7 @@ class BlockchainAnalyzer:
         
     @staticmethod
     def divide_blocks_into_chunks(start_block: int, end_block: int, chunk_size: int) -> List[Tuple[int, int]]:
+        
         chunks = []
         current_start = start_block
         
@@ -49,6 +49,7 @@ class BlockchainAnalyzer:
             raise Exception(error_msg)
     
     def get_token_transactions(self, startblock: int, endblock: int, token_contract_address: str) -> List[Dict[str, Any]]:
+        
         all_txs = []
         current_start = startblock
         
@@ -89,6 +90,7 @@ class BlockchainAnalyzer:
         return all_txs
     
     def get_wallet_transactions(self, wallet: str, count: int = 10, retries: int = None) -> List[Dict[str, Any]]:
+        
         if retries is None:
             retries = Constants.MAX_RETRIES
             
@@ -121,6 +123,7 @@ class BlockchainAnalyzer:
     
     def filter_transactions_by_timerange(self, transactions: List[Dict[str, Any]], 
                                        start_timestamp: int, end_timestamp: int) -> List[Dict[str, Any]]:
+        
         filtered = []
         
         for tx in transactions:
@@ -136,6 +139,7 @@ class BlockchainAnalyzer:
         return filtered
     
     def group_transactions_by_wallet(self, transactions: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        
         wallet_transactions = {}
         
         for tx in transactions:
@@ -159,6 +163,7 @@ class BlockchainAnalyzer:
     
     def find_candidate_wallets(self, transactions: List[Dict[str, Any]], 
                              purchase_start: int, purchase_end: int) -> List[str]:
+        
         candidate_wallets = []
         
         for tx in transactions:

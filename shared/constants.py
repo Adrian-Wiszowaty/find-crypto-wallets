@@ -1,8 +1,6 @@
 import os
 from dotenv import load_dotenv
 load_dotenv()
-
-
 class Constants:
     
     ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "")
@@ -34,7 +32,7 @@ class Constants:
     MAX_RETRIES = 3
     REQUEST_TIMEOUT = 10
     
-    FOLDER_WALLETS = "backend/wallets"
+    FOLDER_WALLETS = "wallets"
     FOLDER_CACHE = "backend/cache"
     FOLDER_LOGS = "backend/logs"
     FOLDER_CONFIG = "shared/config"

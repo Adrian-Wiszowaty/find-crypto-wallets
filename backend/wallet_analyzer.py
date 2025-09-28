@@ -1,12 +1,11 @@
 import json
 import os
 import logging
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Tuple, Any
 from datetime import datetime, timezone, timedelta
 from .config_manager import ConfigManager
 from .api_client import ApiClient
 from shared.constants import Constants
-
 
 class WalletAnalyzer:
     
@@ -23,6 +22,7 @@ class WalletAnalyzer:
         self.frequency_cache = self._load_frequency_cache()
     
     def _load_frequency_cache(self) -> Dict[str, bool]:
+        
         try:
             if os.path.exists(self.cache_file):
                 with open(self.cache_file, "r", encoding="utf-8") as f:
@@ -33,6 +33,7 @@ class WalletAnalyzer:
         return {}
     
     def save_frequency_cache(self) -> None:
+        
         try:
             os.makedirs(os.path.dirname(self.cache_file), exist_ok=True)
             with open(self.cache_file, "w", encoding="utf-8") as f:
@@ -41,6 +42,7 @@ class WalletAnalyzer:
             logging.error(f"Error saving frequency cache: {e}")
     
     def parse_date(self, date_str: str) -> int:
+        
         try:
             dt = datetime.strptime(date_str, Constants.DATE_FORMAT)
             dt = dt - timedelta(hours=Constants.TIMEZONE_OFFSET_HOURS)
@@ -51,6 +53,7 @@ class WalletAnalyzer:
             raise
     
     def _check_transaction_frequency(self, transactions: List[Dict[str, Any]]) -> bool:
+        
         if len(transactions) < 2:
             return True
         
@@ -67,6 +70,7 @@ class WalletAnalyzer:
         return violations < self.min_frequency_violations
     
     def check_wallet_token_frequency(self, wallet: str, wallet_transactions: List[Dict[str, Any]]) -> bool:
+        
         if wallet in self.frequency_cache:
             return False
         
@@ -86,6 +90,7 @@ class WalletAnalyzer:
         return True
     
     def check_wallet_general_frequency(self, wallet: str) -> bool:
+        
         if wallet in self.frequency_cache:
             return False
         
@@ -99,6 +104,7 @@ class WalletAnalyzer:
     
     def simulate_wallet_balance(self, wallet: str, wallet_transactions: List[Dict[str, Any]], 
                                t1_unix: int, t2_unix: int, t3_unix: int) -> Tuple[float, float, int, int]:
+        
         purchased = 0.0
         balance = 0.0
         purchase_count = 0
@@ -121,6 +127,7 @@ class WalletAnalyzer:
             
             if tx["to"].lower() == wallet_lower:
                 balance += amount
+
                 if t1_unix <= timestamp <= t2_unix:
                     purchased += amount
                     purchase_count += 1
@@ -132,6 +139,7 @@ class WalletAnalyzer:
         return round(purchased, 2), round(balance, 2), purchase_count, sale_count
     
     def calculate_wallet_value(self, final_balance: float, token_address: str) -> Tuple[Any, Any]:
+        
         token_rate = self.api_client.get_token_price_from_dexscreener(token_address)
         if token_rate == "error":
             return "error", "error"
@@ -149,9 +157,11 @@ class WalletAnalyzer:
             return "error", "error"
     
     def filter_wallets_by_criteria(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        
         filtered_results = []
         
         for result in results:
+
             if result["purchased"] == 0:
                 continue
             
@@ -172,6 +182,7 @@ class WalletAnalyzer:
     
     def analyze_transactions(self, transactions: List[Dict[str, Any]], 
                            t1_unix: int, t2_unix: int, t3_unix: int) -> Tuple[List[str], Dict[str, List[Dict[str, Any]]]]:
+        
         period_transactions = [
             tx for tx in transactions 
             if t1_unix <= int(tx["timeStamp"]) <= t3_unix
@@ -200,6 +211,7 @@ class WalletAnalyzer:
     def filter_wallets_by_frequency(self, candidate_wallets: List[str], 
                                    wallet_transactions: Dict[str, List[Dict[str, Any]]],
                                    blockchain_analyzer) -> List[str]:
+        
         filtered_wallets = []
         total_wallets = len(candidate_wallets)
         
@@ -227,6 +239,7 @@ class WalletAnalyzer:
                                wallet_transactions: Dict[str, List[Dict[str, Any]]],
                                t1_unix: int, t2_unix: int, t3_unix: int,
                                exchange_rate, native_to_usd_rate) -> List[Dict[str, Any]]:
+        
         results = []
         
         for wallet in wallets:

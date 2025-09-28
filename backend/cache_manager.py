@@ -4,7 +4,6 @@ import logging
 from typing import Dict, Any, Optional
 from .config_manager import ConfigManager
 
-
 class CacheManager:
     
     def __init__(self, config_manager: ConfigManager):
@@ -17,6 +16,7 @@ class CacheManager:
         os.makedirs(self.cache_folder, exist_ok=True)
     
     def load_frequency_cache(self) -> Dict[str, bool]:
+        
         if os.path.exists(self.frequency_cache_file):
             try:
                 with open(self.frequency_cache_file, "r") as f:
@@ -31,6 +31,7 @@ class CacheManager:
             return {}
     
     def save_frequency_cache(self, cache: Dict[str, bool]) -> None:
+        
         try:
             with open(self.frequency_cache_file, "w") as f:
                 json.dump(cache, f, indent=2)
@@ -39,6 +40,7 @@ class CacheManager:
             logging.error(f"Error saving cache to {self.frequency_cache_file}: {e}")
     
     def load_generic_cache(self, cache_filename: str) -> Dict[str, Any]:
+        
         cache_path = os.path.join(self.cache_folder, cache_filename)
         
         if os.path.exists(cache_path):
@@ -55,6 +57,7 @@ class CacheManager:
             return {}
     
     def save_generic_cache(self, cache: Dict[str, Any], cache_filename: str) -> None:
+        
         cache_path = os.path.join(self.cache_folder, cache_filename)
         
         try:
@@ -65,7 +68,9 @@ class CacheManager:
             logging.error(f"Error saving cache to {cache_path}: {e}")
     
     def clear_cache(self, cache_filename: Optional[str] = None) -> None:
+        
         if cache_filename:
+
             cache_path = os.path.join(self.cache_folder, cache_filename)
             if os.path.exists(cache_path):
                 try:
@@ -76,6 +81,7 @@ class CacheManager:
             else:
                 logging.warning(f"Plik cache {cache_filename} nie istnieje")
         else:
+
             try:
                 if os.path.exists(self.cache_folder):
                     for filename in os.listdir(self.cache_folder):
@@ -88,6 +94,7 @@ class CacheManager:
                 logging.error(f"Error clearing cache: {e}")
     
     def get_cache_info(self) -> Dict[str, Any]:
+        
         info = {
             "cache_folder": self.cache_folder,
             "cache_files": [],
@@ -117,10 +124,12 @@ class CacheManager:
         return info
     
     def is_wallet_in_frequency_cache(self, wallet_address: str) -> bool:
+        
         cache = self.load_frequency_cache()
         return wallet_address.lower() in cache
     
     def add_wallet_to_frequency_cache(self, wallet_address: str) -> None:
+        
         cache = self.load_frequency_cache()
         cache[wallet_address.lower()] = True
         self.save_frequency_cache(cache)
