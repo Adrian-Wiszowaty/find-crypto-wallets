@@ -1,31 +1,13 @@
-"""
-Centralna klasa do obsługi błędów i wyjątków w aplikacji.
-"""
 import logging
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional
 from functools import wraps
 
-
 class ErrorHandler:
-    """Klasa zarządzająca centralną obsługą błędów"""
     
     @staticmethod
     def safe_execute(func: Callable, *args, default_return=None, 
                     log_error: bool = True, error_message: str = None, **kwargs) -> Any:
-        """
-        Bezpieczne wykonanie funkcji z obsługą błędów.
         
-        Args:
-            func: Funkcja do wykonania
-            *args: Argumenty pozycyjne
-            default_return: Wartość zwracana w przypadku błędu
-            log_error: Czy logować błąd
-            error_message: Niestandardowy komunikat błędu
-            **kwargs: Argumenty nazwane
-            
-        Returns:
-            Wynik funkcji lub default_return w przypadku błędu
-        """
         try:
             return func(*args, **kwargs)
         except Exception as e:
@@ -36,16 +18,7 @@ class ErrorHandler:
     
     @staticmethod
     def safe_json_load(file_path: str, default_return: dict = None) -> dict:
-        """
-        Bezpieczne ładowanie pliku JSON.
         
-        Args:
-            file_path: Ścieżka do pliku JSON
-            default_return: Wartość zwracana w przypadku błędu
-            
-        Returns:
-            dict: Zawartość pliku lub default_return
-        """
         if default_return is None:
             default_return = {}
             
@@ -69,17 +42,7 @@ class ErrorHandler:
     
     @staticmethod
     def safe_json_save(data: dict, file_path: str, create_dirs: bool = True) -> bool:
-        """
-        Bezpieczne zapisywanie do pliku JSON.
         
-        Args:
-            data: Dane do zapisania
-            file_path: Ścieżka do pliku
-            create_dirs: Czy tworzyć brakujące katalogi
-            
-        Returns:
-            bool: True jeśli zapis się powiódł
-        """
         try:
             import json
             import os
@@ -98,17 +61,7 @@ class ErrorHandler:
     @staticmethod
     def retry_on_exception(max_retries: int = 3, delay: float = 0.1, 
                           exceptions: tuple = (Exception,)) -> Callable:
-        """
-        Dekorator do ponawiania wykonania funkcji w przypadku błędu.
         
-        Args:
-            max_retries: Maksymalna liczba prób
-            delay: Opóźnienie między próbami (w sekundach)
-            exceptions: Typy wyjątków do obsługi
-            
-        Returns:
-            Dekorator funkcji
-        """
         def decorator(func: Callable) -> Callable:
             @wraps(func)
             def wrapper(*args, **kwargs):
@@ -123,7 +76,7 @@ class ErrorHandler:
                         last_exception = e
                         if attempt < max_retries:
                             logging.warning(f"Próba {attempt + 1} nieudana dla {func.__name__}: {e}")
-                            time.sleep(delay * (attempt + 1))  # Zwiększanie delay
+                            time.sleep(delay * (attempt + 1))
                         else:
                             logging.error(f"Wszystkie próby nieudane dla {func.__name__}")
                             
@@ -134,17 +87,7 @@ class ErrorHandler:
     @staticmethod
     def validate_numeric_input(value: Any, min_value: float = None, 
                              max_value: float = None) -> Optional[float]:
-        """
-        Waliduje i konwertuje wartość numeryczną.
         
-        Args:
-            value: Wartość do walidacji
-            min_value: Minimalna wartość (opcjonalna)
-            max_value: Maksymalna wartość (opcjonalna)
-            
-        Returns:
-            float lub None jeśli walidacja nie powiodła się
-        """
         try:
             num_value = float(value)
             

@@ -1,4 +1,3 @@
-import sys
 import tkinter as tk
 
 class LogRedirector:
@@ -14,4 +13,3 @@ class LogRedirector:
 
     def flush(self):
         pass
-

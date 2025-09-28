@@ -1,6 +1,3 @@
-"""
-Klasa odpowiedzialna za obsługę wszystkich zapytań API.
-"""
 import requests
 import time
 import logging
@@ -8,10 +5,8 @@ from typing import Dict, Any, List, Optional, Union
 from .config_manager import ConfigManager
 from shared.constants import Constants
 
-
 class ApiClient:
-    """Zarządza zapytaniami do różnych API (Etherscan, Dexscreener, CoinGecko)"""
-    
+
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
         self.api_key = Constants.ETHERSCAN_API_KEY
@@ -23,7 +18,7 @@ class ApiClient:
         
     def _make_request_with_retry(self, url: str, params: Dict[str, Any], 
                                 retries: int = None) -> Optional[Dict[str, Any]]:
-        """Wykonuje zapytanie z mechanizmem ponawiania"""
+
         if retries is None:
             retries = self.max_retries
             
@@ -34,7 +29,6 @@ class ApiClient:
                 if response.status_code == 200:
                     return response.json()
                 elif response.status_code == 429:
-                    # Rate limit - czekamy dłużej
                     wait_time = self.delay_between_requests * attempt * 2
                     logging.warning(f"Rate limit hit, waiting {wait_time}s")
                     time.sleep(wait_time)
@@ -51,29 +45,26 @@ class ApiClient:
         return None
     
     def _validate_etherscan_response(self, data: Dict[str, Any]) -> bool:
-        """Waliduje odpowiedź z Etherscan API"""
+
         if not isinstance(data, dict) or "result" not in data:
             return False
             
-        # Sprawdzamy status lub czy result to lista
         if data.get("status") == "1" or isinstance(data["result"], list):
             return True
             
-        # Obsługa przypadków "No transactions found"
-        if data.get("message") in ["No transactions found", "No records found"]:
+        if data.get("status") == "0" and "No transactions found" in str(data.get("message", "")):
             return True
             
         return False
     
     def etherscan_api_request(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Wykonuje zapytanie do Etherscan API"""
+
         params["apikey"] = self.api_key
         
         for attempt in range(1, self.max_retries + 1):
             data = self._make_request_with_retry(self.api_url, params)
             
             if data and self._validate_etherscan_response(data):
-                # Normalizacja odpowiedzi - zawsze zwracamy listę w result
                 if data.get("message") in ["No transactions found", "No records found"]:
                     return {"result": []}
                 return data
@@ -83,7 +74,7 @@ class ApiClient:
         raise Exception("Failed to get valid response from Etherscan API")
     
     def get_block_by_timestamp(self, timestamp: int, closest: str = "before") -> int:
-        """Pobiera numer bloku na podstawie timestampu"""
+
         params = {
             "module": "block",
             "action": "getblocknobytime",
@@ -100,7 +91,7 @@ class ApiClient:
     
     def get_token_transactions(self, contract_address: str, start_block: int, 
                               end_block: int) -> List[Dict[str, Any]]:
-        """Pobiera transakcje tokena w danym zakresie bloków"""
+
         all_transactions = []
         current_start = start_block
         
@@ -135,7 +126,7 @@ class ApiClient:
         return all_transactions
     
     def get_wallet_transactions(self, wallet_address: str, count: int = 10) -> List[Dict[str, Any]]:
-        """Pobiera ostatnie transakcje dla danego portfela"""
+
         params = {
             "module": "account",
             "action": "txlist",
@@ -153,10 +144,10 @@ class ApiClient:
             return []
     
     def get_token_price_from_dexscreener(self, token_address: str) -> Union[float, str]:
-        """Pobiera cenę tokena z Dexscreener"""
+
         url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
         
-        for attempt in range(1, 6):  # 5 prób
+        for attempt in range(1, 6):
             try:
                 data = self._make_request_with_retry(url, {})
                 
@@ -189,7 +180,7 @@ class ApiClient:
         return "error"
     
     def get_native_token_usd_price(self) -> Union[float, str]:
-        """Pobiera cenę natywnego tokena w USD z CoinGecko"""
+
         token_id = self.network_config["native_token_full_name"]
         url = Constants.COINGECKO_API_URL
         params = {
@@ -197,7 +188,7 @@ class ApiClient:
             "vs_currencies": "usd"
         }
         
-        for attempt in range(1, 4):  # 3 próby
+        for attempt in range(1, 4):
             try:
                 data = self._make_request_with_retry(url, params)
                 
@@ -216,7 +207,6 @@ class ApiClient:
             except Exception as e:
                 logging.error(f"Error fetching from CoinGecko (attempt {attempt}): {e}")
             
-            # Specjalna obsługa rate limit dla CoinGecko
             if attempt < 3:
                 time.sleep(10 if attempt == 1 else self.delay_between_requests * attempt)
         

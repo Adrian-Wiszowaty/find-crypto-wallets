@@ -1,16 +1,11 @@
-"""
-Klasa odpowiedzialna za pobieranie kursów wymiany walut i tokenów.
-"""
 import requests
 import time
 import logging
-from typing import Union, Dict, Any, Optional
+from typing import Union, Dict
 from .config_manager import ConfigManager
 from shared.constants import Constants
 
-
 class ExchangeRateService:
-    """Zarządza operacjami pobierania kursów wymiany z zewnętrznych API"""
     
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
@@ -19,29 +14,18 @@ class ExchangeRateService:
         self.native_token_full_name = self.network_config["native_token_full_name"]
         self.native_address = self.network_config["native_address"]
         
-        # Adresy dla różnych sieci
         network = config_manager.config.get("NETWORK", "ETH")
         if network == "BASE":
             self.wrapped_native_address = Constants.WETH_ADDRESS_BASE
         elif network == "ETH":
             self.wrapped_native_address = Constants.WETH_ADDRESS_ETH
-        else:  # BSC
+        else:
             self.wrapped_native_address = Constants.WBNB_ADDRESS_BSC
         
         self.max_retries = Constants.MAX_RETRIES
         self.delay_between_requests = Constants.DELAY_BETWEEN_REQUESTS
         
     def get_exchange_rate(self, token_address: str, retries: int = None) -> Union[float, str]:
-        """
-        Pobiera kurs wymiany tokena względem natywnego tokena (WBNB dla BSC, WETH dla ETH/BASE) z API Dexscreener.
-        
-        Args:
-            token_address: Adres kontraktu tokena
-            retries: Liczba prób (domyślnie z Constants)
-            
-        Returns:
-            Union[float, str]: Kurs wymiany lub "error" w przypadku błędu
-        """
         if retries is None:
             retries = self.max_retries
             
@@ -61,7 +45,6 @@ class ExchangeRateService:
                 data = response.json()
                 pairs = data.get("pairs", [])
                 
-                # Szukamy pary z natywnym tokenem sieci
                 for pair in pairs:
                     native_addr = self.wrapped_native_address.lower()
                     base_token_addr = pair.get("baseToken", {}).get("address", "").lower()
@@ -92,16 +75,6 @@ class ExchangeRateService:
         return "error"
     
     def get_token_usd_rate(self, token_address: str, retries: int = None) -> Union[float, str]:
-        """
-        Pobiera kurs wymiany tokena bezpośrednio do USD z API Dexscreener.
-        
-        Args:
-            token_address: Adres kontraktu tokena
-            retries: Liczba prób (domyślnie z Constants)
-            
-        Returns:
-            Union[float, str]: Kurs wymiany do USD lub "error" w przypadku błędu
-        """
         if retries is None:
             retries = self.max_retries
             
@@ -121,7 +94,6 @@ class ExchangeRateService:
                 data = response.json()
                 pairs = data.get("pairs", [])
                 
-                # Szukamy pierwszą parę z ceną USD
                 for pair in pairs:
                     price_usd = pair.get("priceUsd")
                     if price_usd is not None:
@@ -146,15 +118,6 @@ class ExchangeRateService:
         return "error"
     
     def get_native_to_usd_rate(self, retries: int = None) -> Union[float, str]:
-        """
-        Pobiera kurs wymiany natywnego tokena (ETH, BNB) do USD z CoinGecko API.
-        
-        Args:
-            retries: Liczba prób (domyślnie 3)
-            
-        Returns:
-            Union[float, str]: Kurs wymiany lub "error" w przypadku błędu
-        """
         if retries is None:
             retries = 3
             
@@ -166,7 +129,6 @@ class ExchangeRateService:
                 url = f"https://api.coingecko.com/api/v3/simple/price?ids={self.native_token_full_name}&vs_currencies=usd"
                 response = requests.get(url, timeout=10)
                 
-                # Obsługa rate limiting
                 if response.status_code == 429:
                     logging.warning("Przekroczono limit zapytań do CoinGecko. Oczekiwanie na kolejną próbę...")
                     time.sleep(10)
@@ -199,20 +161,7 @@ class ExchangeRateService:
         return "error"
     
     def calculate_token_value_in_usd(self, token_amount: float, token_address: str) -> Dict[str, Union[float, str]]:
-        """
-        Oblicza wartość tokena w USD.
         
-        Args:
-            token_amount: Ilość tokenów
-            token_address: Adres kontraktu tokena
-            
-        Returns:
-            Dict zawierający:
-            - native_value: wartość w natywnym tokenie sieci
-            - usd_value: wartość w USD
-            - exchange_rate: kurs tokena względem natywnego tokena
-            - native_usd_rate: kurs natywnego tokena do USD
-        """
         result = {
             "native_value": "error",
             "usd_value": "error", 
@@ -221,24 +170,21 @@ class ExchangeRateService:
         }
         
         try:
-            # Pobierz kurs tokena względem natywnego tokena
+                        
             exchange_rate = self.get_exchange_rate(token_address)
             result["exchange_rate"] = exchange_rate
             
             if exchange_rate == "error":
                 return result
                 
-            # Pobierz kurs natywnego tokena do USD
             native_usd_rate = self.get_native_to_usd_rate()
             result["native_usd_rate"] = native_usd_rate
             
             if native_usd_rate == "error":
-                # Możemy obliczyć wartość w natywnym tokenie
                 native_value = round(token_amount * float(exchange_rate), 6)
                 result["native_value"] = native_value
                 return result
             
-            # Oblicz wartości
             native_value = round(token_amount * float(exchange_rate), 6)
             usd_value = round(native_value * float(native_usd_rate), 2)
             
@@ -252,15 +198,7 @@ class ExchangeRateService:
             return result
     
     def get_multiple_token_rates(self, token_addresses: list) -> Dict[str, Union[float, str]]:
-        """
-        Pobiera kursy wymiany dla wielu tokenów naraz.
         
-        Args:
-            token_addresses: Lista adresów kontraktów tokenów
-            
-        Returns:
-            Dict[str, Union[float, str]]: Słownik {adres_tokena: kurs_wymiany}
-        """
         rates = {}
         
         for i, token_address in enumerate(token_addresses):
@@ -268,38 +206,18 @@ class ExchangeRateService:
             rate = self.get_exchange_rate(token_address)
             rates[token_address] = rate
             
-            # Dodaj delay między zapytaniami aby uniknąć rate limiting
             if i < len(token_addresses) - 1:
                 time.sleep(self.delay_between_requests)
                 
         return rates
     
     def validate_rates(self, exchange_rate: Union[float, str], native_usd_rate: Union[float, str]) -> bool:
-        """
-        Waliduje czy pobrane kursy są prawidłowe (nie są "error").
-        
-        Args:
-            exchange_rate: Kurs wymiany tokena
-            native_usd_rate: Kurs natywnego tokena do USD
-            
-        Returns:
-            bool: True jeśli oba kursy są prawidłowe
-        """
         return (exchange_rate != "error" and native_usd_rate != "error" and
                 isinstance(exchange_rate, (int, float)) and 
                 isinstance(native_usd_rate, (int, float)))
     
     def get_token_name(self, token_address: str, retries: int = None) -> Union[str, str]:
-        """
-        Pobiera nazwę tokena z API Dexscreener.
         
-        Args:
-            token_address: Adres kontraktu tokena
-            retries: Liczba prób (domyślnie z Constants)
-            
-        Returns:
-            Union[str, str]: Nazwa tokena lub "error" w przypadku błędu
-        """
         if retries is None:
             retries = self.max_retries
             
@@ -319,12 +237,10 @@ class ExchangeRateService:
                 data = response.json()
                 pairs = data.get("pairs", [])
                 
-                # Szukamy pierwszą parę i pobieramy nazwę tokena
                 for pair in pairs:
                     base_token = pair.get("baseToken", {})
                     quote_token = pair.get("quoteToken", {})
                     
-                    # Sprawdź czy nasz token jest base czy quote tokenem
                     if base_token.get("address", "").lower() == token_address.lower():
                         token_name = base_token.get("name") or base_token.get("symbol")
                         break
