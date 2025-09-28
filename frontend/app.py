@@ -12,7 +12,7 @@ from shared.datetime_helper import DateTimeHelper
 from shared.error_handler import ErrorHandler
 from .gui_helpers import GUIHelpers
 from .log_redirector import LogRedirector
-from backend.main import main
+from backend.wallet_processor import main
 
 class WalletApp:
     
