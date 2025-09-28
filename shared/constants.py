@@ -118,13 +118,3 @@ class Constants:
     LOG_LEVEL_ERROR = "ERROR"
     LOG_LEVEL_WARNING = "WARNING"
     LOG_LEVEL_DEBUG = "DEBUG"
-    
-    @classmethod
-    def get_network_config(cls, network: str) -> dict:
-        if network not in cls.NETWORKS:
-            raise ValueError(f"{cls.ERROR_UNSUPPORTED_NETWORK}: {network}")
-        return cls.NETWORKS[network]
-    
-    @classmethod
-    def get_supported_networks(cls) -> list:
-        return list(cls.NETWORKS.keys())

@@ -8,6 +8,7 @@ from tkinter import Text, messagebox
 import ttkbootstrap as ttk
 
 from shared.constants import Constants
+from backend.config_manager import ConfigManager
 from shared.datetime_helper import DateTimeHelper
 from shared.error_handler import ErrorHandler
 from .gui_helpers import GUIHelpers
@@ -68,7 +69,7 @@ class WalletApp:
         
         self.network_var = tk.StringVar(value=Constants.DEFAULT_CONFIG["NETWORK"])
         network_combo = ttk.Combobox(frame_network, textvariable=self.network_var,
-                                   values=Constants.get_supported_networks(),
+                                   values=ConfigManager.get_supported_networks(),
                                    state="readonly", style="info.TCombobox")
         network_combo.grid(row=0, column=1, padx=Constants.GUI_PADDING_X,
                          pady=Constants.GUI_PADDING_Y, sticky="ew")

@@ -3,6 +3,7 @@ import os
 import json
 import logging
 from shared.constants import Constants
+from backend.config_manager import ConfigManager
 
 API_KEY_USED = ""
 API_URL = ""
@@ -33,7 +34,7 @@ TOKEN_CONTRACT_ADDRESS = config.get("TOKEN_CONTRACT_ADDRESS", Constants.DEFAULT_
 
 API_KEY_USED = Constants.ETHERSCAN_API_KEY
 
-network_config = Constants.get_network_config(NETWORK)
+network_config = ConfigManager.get_network_config_by_name(NETWORK)
 API_URL = network_config["api_url"]
 NATIVE_TOKEN_NAME = network_config["native_token_name"]
 NATIVE_TOKEN_FULL_NAME = network_config["native_token_full_name"]
@@ -139,7 +140,7 @@ def main():
         if exchange_rate == "error":
             print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna ustawiona jako 'error'.")
         
-        current_network_config = Constants.get_network_config(current_network)
+        current_network_config = ConfigManager.get_network_config_by_name(current_network)
         current_native_token_name = current_network_config["native_token_name"]
         
         native_to_usd_rate = exchange_rate_service.get_native_to_usd_rate()
