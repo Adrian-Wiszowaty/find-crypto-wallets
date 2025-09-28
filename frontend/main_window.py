@@ -232,7 +232,7 @@ class MainWindow:
         )
         
         self.network_var = ttk.StringVar()
-        network_codes = Constants.get_supported_networks()
+        network_codes = ConfigManager.get_supported_networks()
         
         self.network_combo = ttk.Combobox(
             frame_network, textvariable=self.network_var,

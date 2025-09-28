@@ -36,7 +36,17 @@ class ConfigManager:
     def get_network_config(self) -> Dict[str, str]:
         
         network = self.get("NETWORK", Constants.DEFAULT_CONFIG["NETWORK"])
-        return Constants.get_network_config(network)
+        return self.get_network_config_by_name(network)
+    
+    @staticmethod
+    def get_network_config_by_name(network: str) -> Dict[str, str]:
+        if network not in Constants.NETWORKS:
+            raise ValueError(f"{Constants.ERROR_UNSUPPORTED_NETWORK}: {network}")
+        return Constants.NETWORKS[network]
+    
+    @staticmethod
+    def get_supported_networks() -> list:
+        return list(Constants.NETWORKS.keys())
     
     def validate_config(self) -> bool:
         
@@ -55,7 +65,7 @@ class ConfigManager:
                 logging.error(f"Invalid date format in field {field}")
                 return False
         
-        supported_networks = Constants.get_supported_networks()
+        supported_networks = self.get_supported_networks()
         if self.get("NETWORK") not in supported_networks:
             logging.error(f"{Constants.ERROR_UNSUPPORTED_NETWORK}: {self.get('NETWORK')}. Available: {supported_networks}")
             return False
