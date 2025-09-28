@@ -18,6 +18,7 @@ class WalletAnalyzer:
         self.min_frequency_violations = ApiConstants.MIN_FREQUENCY_VIOLATIONS
         self.min_transaction_count = ApiConstants.MIN_TRANSACTION_COUNT
         self.min_usd_value = ApiConstants.MIN_USD_VALUE
+        self.min_balance_percentage = ApiConstants.MIN_BALANCE_PERCENTAGE / 100.0
         
         paths = config_manager.get_paths_config()
         self.cache_file = paths["cache_file"]
@@ -168,7 +169,7 @@ class WalletAnalyzer:
                 continue
             
             percentage = (result["final_balance"] / result["purchased"]) * 100
-            if result["final_balance"] < 0.5 * result["purchased"]:
+            if result["final_balance"] < self.min_balance_percentage * result["purchased"]:
                 continue
             
             if (result["usd_value"] != "error" and 
@@ -254,7 +255,7 @@ class WalletAnalyzer:
                 continue
                 
             percentage = (final_balance / purchased) * 100
-            if final_balance < 0.5 * purchased:
+            if final_balance < self.min_balance_percentage * purchased:
                 continue
             
             if exchange_rate != "error" and native_to_usd_rate != "error":
