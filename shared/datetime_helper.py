@@ -1,19 +1,20 @@
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Union
-from constants import Constants
+from shared.constants.config_constants import ConfigConstants
+from shared.constants.message_constants import MessageConstants
 
 class DateTimeHelper:
     
     @staticmethod
     def parse_date(date_str: str) -> int:
         try:
-            dt = datetime.strptime(date_str, Constants.DATE_FORMAT)
-            dt = dt - timedelta(hours=Constants.TIMEZONE_OFFSET_HOURS)
+            dt = datetime.strptime(date_str, ConfigConstants.DATE_FORMAT)
+            dt = dt - timedelta(hours=ConfigConstants.TIMEZONE_OFFSET_HOURS)
             dt = dt.replace(tzinfo=timezone.utc)
             return int(dt.timestamp())
         except ValueError as e:
-            error_msg = f"{Constants.ERROR_INVALID_DATE_FORMAT} {date_str}: {e}"
+            error_msg = f"{MessageConstants.ERROR_INVALID_DATE_FORMAT} {date_str}: {e}"
             logging.error(error_msg)
             raise ValueError(error_msg)
         except Exception as e:

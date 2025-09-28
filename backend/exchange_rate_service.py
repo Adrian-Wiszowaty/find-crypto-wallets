@@ -3,7 +3,8 @@ import time
 import logging
 from typing import Union, Dict
 from .config_manager import ConfigManager
-from shared.constants import Constants
+from shared.constants.api_constants import ApiConstants
+from shared.constants.network_constants import NetworkConstants
 
 class ExchangeRateService:
     
@@ -16,14 +17,14 @@ class ExchangeRateService:
         
         network = config_manager.config.get("NETWORK", "ETH")
         if network == "BASE":
-            self.wrapped_native_address = Constants.WETH_ADDRESS_BASE
+            self.wrapped_native_address = NetworkConstants.WETH_ADDRESS_BASE
         elif network == "ETH":
-            self.wrapped_native_address = Constants.WETH_ADDRESS_ETH
+            self.wrapped_native_address = NetworkConstants.WETH_ADDRESS_ETH
         else:
-            self.wrapped_native_address = Constants.WBNB_ADDRESS_BSC
+            self.wrapped_native_address = NetworkConstants.WBNB_ADDRESS_BSC
         
-        self.max_retries = Constants.MAX_RETRIES
-        self.delay_between_requests = Constants.DELAY_BETWEEN_REQUESTS
+        self.max_retries = ApiConstants.MAX_RETRIES
+        self.delay_between_requests = ApiConstants.DELAY_BETWEEN_REQUESTS
         
     def get_exchange_rate(self, token_address: str, retries: int = None) -> Union[float, str]:
         if retries is None:
@@ -34,7 +35,7 @@ class ExchangeRateService:
         
         while attempt < retries:
             try:
-                url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
+                url = ApiConstants.DEXSCREENER_API_URL.format(token_address.lower())
                 response = requests.get(url, timeout=10)
                 
                 if response.status_code != 200:
@@ -83,7 +84,7 @@ class ExchangeRateService:
         
         while attempt < retries:
             try:
-                url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
+                url = ApiConstants.DEXSCREENER_API_URL.format(token_address.lower())
                 response = requests.get(url, timeout=10)
                 
                 if response.status_code != 200:
@@ -226,7 +227,7 @@ class ExchangeRateService:
         
         while attempt < retries:
             try:
-                url = Constants.DEXSCREENER_API_URL.format(token_address.lower())
+                url = ApiConstants.DEXSCREENER_API_URL.format(token_address.lower())
                 response = requests.get(url, timeout=10)
                 
                 if response.status_code != 200:

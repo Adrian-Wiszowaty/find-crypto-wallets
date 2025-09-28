@@ -3,6 +3,7 @@ from typing import List, Dict, Any
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from .config_manager import ConfigManager
+from shared.constants.config_constants import ConfigConstants
 
 class ExcelReporter:
     
@@ -18,11 +19,9 @@ class ExcelReporter:
         def format_date_for_filename(date_str):
             try:
                 from datetime import datetime
-                from shared.constants import Constants
-                dt = datetime.strptime(date_str, Constants.DATE_FORMAT)
+                dt = datetime.strptime(date_str, ConfigConstants.DATE_FORMAT)
                 return dt.strftime("%d-%m-%Y")
             except:
-
                 return date_str.replace(" ", "_").replace(":", "").replace("-", "")
         
         t1_formatted = format_date_for_filename(t1_str)

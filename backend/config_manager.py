@@ -2,14 +2,17 @@ import os
 from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
-from shared.constants import Constants
+from shared.constants.config_constants import ConfigConstants
+from shared.constants.file_constants import FileConstants
+from shared.constants.message_constants import MessageConstants
+from shared.constants.network_constants import NetworkConstants
 
 class ConfigManager:
     
     def __init__(self, config_file: Optional[str] = None):
 
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.config_file = config_file or os.path.join(self.base_dir, Constants.FOLDER_CONFIG, Constants.FILE_CONFIG)
+        self.config_file = config_file or os.path.join(self.base_dir, FileConstants.FOLDER_CONFIG, FileConstants.FILE_CONFIG)
         self.config = self._load_config()
         
     def _load_config(self) -> Dict[str, Any]:
@@ -35,22 +38,22 @@ class ConfigManager:
     
     def get_network_config(self) -> Dict[str, str]:
         
-        network = self.get("NETWORK", Constants.DEFAULT_CONFIG["NETWORK"])
+        network = self.get("NETWORK", ConfigConstants.DEFAULT_CONFIG["NETWORK"])
         return self.get_network_config_by_name(network)
     
     @staticmethod
     def get_network_config_by_name(network: str) -> Dict[str, str]:
-        if network not in Constants.NETWORKS:
-            raise ValueError(f"{Constants.ERROR_UNSUPPORTED_NETWORK}: {network}")
-        return Constants.NETWORKS[network]
+        if network not in NetworkConstants.NETWORKS:
+            raise ValueError(f"{MessageConstants.ERROR_UNSUPPORTED_NETWORK}: {network}")
+        return NetworkConstants.NETWORKS[network]
     
     @staticmethod
     def get_supported_networks() -> list:
-        return list(Constants.NETWORKS.keys())
+        return list(NetworkConstants.NETWORKS.keys())
     
     def validate_config(self) -> bool:
         
-        required_fields = list(Constants.DEFAULT_CONFIG.keys())
+        required_fields = list(ConfigConstants.DEFAULT_CONFIG.keys())
         
         for field in required_fields:
             if not self.get(field):
@@ -60,14 +63,14 @@ class ConfigManager:
         date_fields = ["T1_STR", "T2_STR", "T3_STR"]
         for field in date_fields:
             try:
-                datetime.strptime(self.get(field), Constants.DATE_FORMAT)
+                datetime.strptime(self.get(field), ConfigConstants.DATE_FORMAT)
             except ValueError:
                 logging.error(f"Invalid date format in field {field}")
                 return False
         
         supported_networks = self.get_supported_networks()
         if self.get("NETWORK") not in supported_networks:
-            logging.error(f"{Constants.ERROR_UNSUPPORTED_NETWORK}: {self.get('NETWORK')}. Available: {supported_networks}")
+            logging.error(f"{MessageConstants.ERROR_UNSUPPORTED_NETWORK}: {self.get('NETWORK')}. Available: {supported_networks}")
             return False
         
         return True
@@ -76,11 +79,11 @@ class ConfigManager:
         
         return {
             "base_dir": self.base_dir,
-            "wallets_folder": os.path.join(self.base_dir, Constants.FOLDER_WALLETS),
-            "cache_folder": os.path.join(self.base_dir, Constants.FOLDER_CACHE),
-            "logs_folder": os.path.join(self.base_dir, Constants.FOLDER_LOGS),
-            "cache_file": os.path.join(self.base_dir, Constants.FOLDER_CACHE, Constants.FILE_WALLET_CACHE),
-            "log_file": os.path.join(self.base_dir, Constants.FOLDER_LOGS, Constants.FILE_ERROR_LOG)
+            "wallets_folder": os.path.join(self.base_dir, FileConstants.FOLDER_WALLETS),
+            "cache_folder": os.path.join(self.base_dir, FileConstants.FOLDER_CACHE),
+            "logs_folder": os.path.join(self.base_dir, FileConstants.FOLDER_LOGS),
+            "cache_file": os.path.join(self.base_dir, FileConstants.FOLDER_CACHE, FileConstants.FILE_WALLET_CACHE),
+            "log_file": os.path.join(self.base_dir, FileConstants.FOLDER_LOGS, FileConstants.FILE_ERROR_LOG)
         }
     
     def ensure_directories(self) -> None:

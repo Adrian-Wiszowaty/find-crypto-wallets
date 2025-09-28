@@ -7,20 +7,22 @@ from tkinter import Text, messagebox
 
 import ttkbootstrap as ttk
 
-from shared.constants import Constants
 from backend.config_manager import ConfigManager
 from shared.datetime_helper import DateTimeHelper
 from shared.error_handler import ErrorHandler
 from .gui_helpers import GUIHelpers
 from .log_redirector import LogRedirector
 from backend.wallet_processor import main
+from shared.constants.config_constants import ConfigConstants
+from shared.constants.file_constants import FileConstants
+from shared.constants.gui_constants import GuiConstants
 
 class WalletApp:
     
     def __init__(self):
 
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.config_file = os.path.join(self.base_dir, Constants.FOLDER_CONFIG, Constants.FILE_CONFIG)
+        self.config_file = os.path.join(self.base_dir, FileConstants.FOLDER_CONFIG, FileConstants.FILE_CONFIG)
         
         self._setup_main_window()
         self._setup_gui_components()
@@ -28,12 +30,12 @@ class WalletApp:
     
     def _setup_main_window(self):
         
-        self.root = ttk.Window(title=Constants.APP_TITLE, themename=Constants.GUI_THEME)
+        self.root = ttk.Window(title=GuiConstants.APP_TITLE, themename=GuiConstants.GUI_THEME)
         
-        icon_path = os.path.join(self.base_dir, Constants.FOLDER_IMAGES, Constants.FILE_APP_ICON)
+        icon_path = os.path.join(self.base_dir, FileConstants.FOLDER_IMAGES, FileConstants.FILE_APP_ICON)
         GUIHelpers.setup_icon(self.root, icon_path)
         
-        self.root.minsize(Constants.GUI_MIN_WIDTH, Constants.GUI_MIN_HEIGHT)
+        self.root.minsize(GuiConstants.GUI_MIN_WIDTH, GuiConstants.GUI_MIN_HEIGHT)
         self.root.grid_columnconfigure(0, weight=1, uniform="equal")
         
         GUIHelpers.configure_ttk_style()
@@ -48,106 +50,106 @@ class WalletApp:
         
     def _create_log_section(self):
         
-        self.log_widget = Text(self.root, height=Constants.GUI_LOG_HEIGHT, width=Constants.GUI_LOG_WIDTH)
-        self.log_widget.grid(row=0, column=0, padx=Constants.GUI_PADDING_X, pady=5, 
+        self.log_widget = Text(self.root, height=GuiConstants.GUI_LOG_HEIGHT, width=GuiConstants.GUI_LOG_WIDTH)
+        self.log_widget.grid(row=0, column=0, padx=GuiConstants.GUI_PADDING_X, pady=5, 
                            columnspan=2, sticky="ew")
-        self.log_widget.config(bg=Constants.GUI_LOG_BG_COLOR, fg=Constants.GUI_LOG_FG_COLOR,
-                             insertbackground=Constants.GUI_LOG_INSERT_BG_COLOR)
+        self.log_widget.config(bg=GuiConstants.GUI_LOG_BG_COLOR, fg=GuiConstants.GUI_LOG_FG_COLOR,
+                             insertbackground=GuiConstants.GUI_LOG_INSERT_BG_COLOR)
         
         sys.stdout = LogRedirector(self.log_widget)
     
     def _create_network_section(self):
         
         frame_network = ttk.Labelframe(self.root, text="Sieć blockchain")
-        frame_network.grid(row=1, column=0, padx=Constants.GUI_PADDING_X, 
-                         pady=Constants.GUI_PADDING_Y, sticky="ew")
+        frame_network.grid(row=1, column=0, padx=GuiConstants.GUI_PADDING_X, 
+                         pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         frame_network.grid_columnconfigure(1, weight=1)
         
         ttk.Label(frame_network, text="Wybierz sieć:").grid(
-            row=0, column=0, padx=Constants.GUI_PADDING_X, 
-            pady=Constants.GUI_PADDING_Y, sticky="w")
+            row=0, column=0, padx=GuiConstants.GUI_PADDING_X, 
+            pady=GuiConstants.GUI_PADDING_Y, sticky="w")
         
-        self.network_var = tk.StringVar(value=Constants.DEFAULT_CONFIG["NETWORK"])
+        self.network_var = tk.StringVar(value=ConfigConstants.DEFAULT_CONFIG["NETWORK"])
         network_combo = ttk.Combobox(frame_network, textvariable=self.network_var,
                                    values=ConfigManager.get_supported_networks(),
                                    state="readonly", style="info.TCombobox")
-        network_combo.grid(row=0, column=1, padx=Constants.GUI_PADDING_X,
-                         pady=Constants.GUI_PADDING_Y, sticky="ew")
+        network_combo.grid(row=0, column=1, padx=GuiConstants.GUI_PADDING_X,
+                         pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
     
     def _create_token_section(self):
         
         frame_contract = ttk.Labelframe(self.root, text="Token")
-        frame_contract.grid(row=2, column=0, padx=Constants.GUI_PADDING_X,
-                          pady=Constants.GUI_PADDING_Y, sticky="ew")
+        frame_contract.grid(row=2, column=0, padx=GuiConstants.GUI_PADDING_X,
+                          pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         frame_contract.grid_columnconfigure(1, weight=1)
         
         ttk.Label(frame_contract, text="Adres kontraktu:").grid(
-            row=0, column=0, padx=Constants.GUI_PADDING_X,
-            pady=Constants.GUI_PADDING_Y, sticky="w")
+            row=0, column=0, padx=GuiConstants.GUI_PADDING_X,
+            pady=GuiConstants.GUI_PADDING_Y, sticky="w")
         
         self.token_contract_entry = ttk.Entry(frame_contract, width=40)
-        self.token_contract_entry.grid(row=0, column=1, padx=Constants.GUI_PADDING_X,
-                                     pady=Constants.GUI_PADDING_Y, sticky="ew")
+        self.token_contract_entry.grid(row=0, column=1, padx=GuiConstants.GUI_PADDING_X,
+                                     pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         
-        self.token_contract_entry.insert(0, Constants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
+        self.token_contract_entry.insert(0, ConfigConstants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
     
     def _create_datetime_sections(self):
         
         frame_t1 = ttk.Labelframe(self.root, text="Data początkowa - T1")
-        frame_t1.grid(row=3, column=0, padx=Constants.GUI_PADDING_X,
-                     pady=Constants.GUI_PADDING_Y, sticky="ew")
+        frame_t1.grid(row=3, column=0, padx=GuiConstants.GUI_PADDING_X,
+                     pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         
         self.T1_widgets = GUIHelpers.create_datetime_section(
             frame_t1, "Wybierz T1:", row=0, 
-            padx=Constants.GUI_PADDING_X, pady=Constants.GUI_PADDING_Y)
+            padx=GuiConstants.GUI_PADDING_X, pady=GuiConstants.GUI_PADDING_Y)
         
         copy_t1_button = ttk.Button(frame_t1, text="Kopiuj do T2 i T3", width=17,
                                    command=self._copy_t1_to_all)
-        copy_t1_button.grid(row=0, column=2, padx=Constants.GUI_PADDING_X,
-                           pady=Constants.GUI_PADDING_Y, sticky="ew", columnspan=2)
+        copy_t1_button.grid(row=0, column=2, padx=GuiConstants.GUI_PADDING_X,
+                           pady=GuiConstants.GUI_PADDING_Y, sticky="ew", columnspan=2)
         
         frame_t2 = ttk.Labelframe(self.root, text="Data końca zakupów - T2")
-        frame_t2.grid(row=4, column=0, padx=Constants.GUI_PADDING_X,
-                     pady=Constants.GUI_PADDING_Y, sticky="ew")
+        frame_t2.grid(row=4, column=0, padx=GuiConstants.GUI_PADDING_X,
+                     pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         
         self.T2_widgets = GUIHelpers.create_datetime_section(
             frame_t2, "Wybierz T2:", row=0,
-            padx=Constants.GUI_PADDING_X, pady=Constants.GUI_PADDING_Y)
+            padx=GuiConstants.GUI_PADDING_X, pady=GuiConstants.GUI_PADDING_Y)
         
         copy_t1_t2_button = ttk.Button(frame_t2, text="Kopiuj T1", width=17,
                                       command=self._copy_t1_to_t2)
-        copy_t1_t2_button.grid(row=0, column=2, padx=Constants.GUI_PADDING_X,
-                              pady=Constants.GUI_PADDING_Y, columnspan=2, sticky="ew")
+        copy_t1_t2_button.grid(row=0, column=2, padx=GuiConstants.GUI_PADDING_X,
+                              pady=GuiConstants.GUI_PADDING_Y, columnspan=2, sticky="ew")
         
         frame_t3 = ttk.Labelframe(self.root, text="Data końca analizy - T3")
-        frame_t3.grid(row=5, column=0, padx=Constants.GUI_PADDING_X,
-                     pady=Constants.GUI_PADDING_Y, sticky="ew")
+        frame_t3.grid(row=5, column=0, padx=GuiConstants.GUI_PADDING_X,
+                     pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         
         self.T3_widgets = GUIHelpers.create_datetime_section(
             frame_t3, "Wybierz T3:", row=0,
-            padx=Constants.GUI_PADDING_X, pady=Constants.GUI_PADDING_Y)
+            padx=GuiConstants.GUI_PADDING_X, pady=GuiConstants.GUI_PADDING_Y)
         
         copy_t2_t3_button = ttk.Button(frame_t3, text="Kopiuj T2", width=17,
                                       command=self._copy_t2_to_t3)
-        copy_t2_t3_button.grid(row=0, column=2, padx=Constants.GUI_PADDING_X,
-                              pady=Constants.GUI_PADDING_Y, columnspan=2, sticky="ew")
+        copy_t2_t3_button.grid(row=0, column=2, padx=GuiConstants.GUI_PADDING_X,
+                              pady=GuiConstants.GUI_PADDING_Y, columnspan=2, sticky="ew")
     
     def _create_control_buttons(self):
         
         frame_buttons = ttk.Frame(self.root)
-        frame_buttons.grid(row=6, column=0, padx=Constants.GUI_PADDING_X,
-                         pady=Constants.GUI_PADDING_Y, sticky="ew")
+        frame_buttons.grid(row=6, column=0, padx=GuiConstants.GUI_PADDING_X,
+                         pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         frame_buttons.grid_columnconfigure((0, 1), weight=1)
         
         self.run_button = ttk.Button(frame_buttons, text="URUCHOM ANALIZĘ",
                                    command=self._save_and_run, bootstyle="success")
-        self.run_button.grid(row=0, column=0, padx=Constants.GUI_PADDING_X,
-                           pady=Constants.GUI_PADDING_Y, sticky="ew")
+        self.run_button.grid(row=0, column=0, padx=GuiConstants.GUI_PADDING_X,
+                           pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         
         close_button = ttk.Button(frame_buttons, text="ZAMKNIJ",
                                 command=self.root.quit, bootstyle="danger")
-        close_button.grid(row=0, column=1, padx=Constants.GUI_PADDING_X,
-                         pady=Constants.GUI_PADDING_Y, sticky="ew")
+        close_button.grid(row=0, column=1, padx=GuiConstants.GUI_PADDING_X,
+                         pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
     
     def _copy_t1_to_all(self):
         
@@ -249,11 +251,11 @@ class WalletApp:
     
     def _load_config(self):
         
-        config = ErrorHandler.safe_json_load(self.config_file, Constants.DEFAULT_CONFIG)
+        config = ErrorHandler.safe_json_load(self.config_file, ConfigConstants.DEFAULT_CONFIG)
         
-        self.network_var.set(config.get("NETWORK", Constants.DEFAULT_CONFIG["NETWORK"]))
+        self.network_var.set(config.get("NETWORK", ConfigConstants.DEFAULT_CONFIG["NETWORK"]))
         
-        token_address = config.get("TOKEN_CONTRACT_ADDRESS", Constants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
+        token_address = config.get("TOKEN_CONTRACT_ADDRESS", ConfigConstants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
         self.token_contract_entry.delete(0, tk.END)
         self.token_contract_entry.insert(0, token_address)
         
@@ -264,8 +266,8 @@ class WalletApp:
     def _load_datetime_config(self, config_key: str, widgets: tuple, config: dict):
         
         try:
-            date_str = config.get(config_key, Constants.DEFAULT_CONFIG[config_key])
-            date_obj = datetime.strptime(date_str, Constants.DATE_FORMAT)
+            date_str = config.get(config_key, ConfigConstants.DEFAULT_CONFIG[config_key])
+            date_obj = datetime.strptime(date_str, ConfigConstants.DATE_FORMAT)
             
             date_entry, hour_combo, minute_combo, second_combo = widgets
             
