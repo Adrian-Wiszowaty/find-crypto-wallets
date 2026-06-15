@@ -1,6 +1,6 @@
 import time
 import logging
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any
 from .api_client import ApiClient
 from shared.constants.api_constants import ApiConstants
 
@@ -9,19 +9,6 @@ class BlockchainAnalyzer:
     def __init__(self, api_client: ApiClient):
         self.api_client = api_client
         
-    @staticmethod
-    def divide_blocks_into_chunks(start_block: int, end_block: int, chunk_size: int) -> List[Tuple[int, int]]:
-        
-        chunks = []
-        current_start = start_block
-        
-        while current_start <= end_block:
-            current_end = min(current_start + chunk_size - 1, end_block)
-            chunks.append((current_start, current_end))
-            current_start = current_end + 1
-            
-        return chunks
-    
     def get_block_by_timestamp(self, timestamp: int, closest: str = "before") -> int:
         params = {
             "module": "block",
@@ -39,9 +26,11 @@ class BlockchainAnalyzer:
             
             if not data or "result" not in data:
                 raise Exception(f"Invalid API response for timestamp {timestamp}")
-                
-            block_number = int(data["result"])
-            return block_number
+
+            if data.get("status") == "0":
+                raise Exception(f"API rejected the request: {data.get('result') or data.get('message')}")
+
+            return int(data["result"])
             
         except Exception as e:
             error_msg = f"Failed to fetch block number for timestamp {timestamp}: {e}"
@@ -89,39 +78,7 @@ class BlockchainAnalyzer:
         
         return all_txs
     
-    def get_wallet_transactions(self, wallet: str, count: int = 10, retries: Optional[int] = None) -> List[Dict[str, Any]]:
-        
-        if retries is None:
-            retries = ApiConstants.MAX_RETRIES
-            
-        params = {
-            "module": "account",
-            "action": "txlist",
-            "address": wallet,
-            "page": 1,
-            "offset": count,
-            "sort": "desc",
-            "apikey": self.api_client.api_key
-        }
-        
-        try:
-            data = self.api_client._make_request_with_retry(
-                self.api_client.api_url, 
-                params, 
-                retries
-            )
-            
-            if data and "result" in data and isinstance(data["result"], list):
-                return data["result"]
-            else:
-                logging.error(f"Nieoczekiwany format odpowiedzi przy pobieraniu transakcji portfela {wallet}: {data}")
-                return []
-                
-        except Exception as e:
-            logging.error(f"Error fetching transactions for wallet {wallet}: {e}")
-            return []
-    
-    def filter_transactions_by_timerange(self, transactions: List[Dict[str, Any]], 
+    def filter_transactions_by_timerange(self, transactions: List[Dict[str, Any]],
                                        start_timestamp: int, end_timestamp: int) -> List[Dict[str, Any]]:
         
         filtered = []

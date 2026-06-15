@@ -55,7 +55,7 @@ class DateTimeHelper:
             t3 = DateTimeHelper.parse_date(t3_str)
             
             if not (t1 <= t2 <= t3):
-                raise ValueError(f"")
+                raise ValueError("Dates must satisfy T1 ≤ T2 ≤ T3")
             
             return True
         except Exception as e:
