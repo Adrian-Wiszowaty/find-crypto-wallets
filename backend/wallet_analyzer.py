@@ -2,12 +2,9 @@ import json
 import os
 import logging
 from typing import Dict, List, Tuple, Any
-from datetime import datetime, timezone, timedelta
 from .config_manager import ConfigManager
 from .api_client import ApiClient
 from shared.constants.api_constants import ApiConstants
-from shared.constants.config_constants import ConfigConstants
-from shared.constants.message_constants import MessageConstants
 
 class WalletAnalyzer:
     
@@ -43,17 +40,6 @@ class WalletAnalyzer:
                 json.dump(self.frequency_cache, f, indent=2)
         except Exception as e:
             logging.error(f"Error saving frequency cache: {e}")
-    
-    def parse_date(self, date_str: str) -> int:
-        
-        try:
-            dt = datetime.strptime(date_str, ConfigConstants.DATE_FORMAT)
-            dt = dt - timedelta(hours=ConfigConstants.TIMEZONE_OFFSET_HOURS)
-            dt = dt.replace(tzinfo=timezone.utc)
-            return int(dt.timestamp())
-        except Exception as e:
-            logging.error(f"{MessageConstants.ERROR_INVALID_DATE_FORMAT} {date_str}: {e}")
-            raise
     
     def _check_transaction_frequency(self, transactions: List[Dict[str, Any]]) -> bool:
         
@@ -140,78 +126,8 @@ class WalletAnalyzer:
                 sale_count += 1
         
         return round(purchased, 2), round(balance, 2), purchase_count, sale_count
-    
-    def calculate_wallet_value(self, final_balance: float, token_address: str) -> Tuple[Any, Any]:
-        
-        token_rate = self.api_client.get_token_price_from_dexscreener(token_address)
-        if token_rate == "error":
-            return "error", "error"
-        
-        native_usd_rate = self.api_client.get_native_token_usd_price()
-        if native_usd_rate == "error":
-            return "error", "error"
-        
-        try:
-            native_value = round(final_balance * float(token_rate), 2)
-            usd_value = round(native_value * float(native_usd_rate), 2)
-            return native_value, usd_value
-        except (ValueError, TypeError) as e:
-            logging.error(f"Error calculating wallet value: {e}")
-            return "error", "error"
-    
-    def filter_wallets_by_criteria(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        
-        filtered_results = []
-        
-        for result in results:
 
-            if result["purchased"] == 0:
-                continue
-            
-            percentage = (result["final_balance"] / result["purchased"]) * 100
-            if result["final_balance"] < self.min_balance_percentage * result["purchased"]:
-                continue
-            
-            if (result["usd_value"] != "error" and 
-                isinstance(result["usd_value"], (int, float)) and 
-                result["usd_value"] < self.min_usd_value):
-                print(f"Wallet {result['wallet']} rejected ({result['usd_value']} USD < {self.min_usd_value} USD)")
-                continue
-            
-            result["percentage"] = f"{percentage:.2f}%"
-            filtered_results.append(result)
-        
-        return filtered_results
-    
-    def analyze_transactions(self, transactions: List[Dict[str, Any]], 
-                           t1_unix: int, t2_unix: int, t3_unix: int) -> Tuple[List[str], Dict[str, List[Dict[str, Any]]]]:
-        
-        period_transactions = [
-            tx for tx in transactions 
-            if t1_unix <= int(tx["timeStamp"]) <= t3_unix
-        ]
-        
-        print(f"Transactions in period T1-T3: {len(period_transactions)}")
-        
-        wallet_transactions = {}
-        candidate_wallets = set()
-        
-        for tx in period_transactions:
-            wallet_from = tx["from"].lower()
-            wallet_to = tx["to"].lower()
-            tx_timestamp = int(tx["timeStamp"])
-            
-            for wallet in [wallet_from, wallet_to]:
-                if wallet not in wallet_transactions:
-                    wallet_transactions[wallet] = []
-                wallet_transactions[wallet].append(tx)
-            
-            if t1_unix <= tx_timestamp <= t2_unix:
-                candidate_wallets.add(wallet_to)
-        
-        return list(candidate_wallets), wallet_transactions
-    
-    def filter_wallets_by_frequency(self, candidate_wallets: List[str], 
+    def filter_wallets_by_frequency(self, candidate_wallets: List[str],
                                    wallet_transactions: Dict[str, List[Dict[str, Any]]],
                                    blockchain_analyzer) -> List[str]:
         

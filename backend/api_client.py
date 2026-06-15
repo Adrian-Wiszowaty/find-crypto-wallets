@@ -73,58 +73,6 @@ class ApiClient:
             
         raise Exception("Failed to get valid response from Etherscan API")
     
-    def get_block_by_timestamp(self, timestamp: int, closest: str = "before") -> int:
-
-        params = {
-            "module": "block",
-            "action": "getblocknobytime",
-            "timestamp": timestamp,
-            "closest": closest
-        }
-        
-        try:
-            data = self.etherscan_api_request(params)
-            return int(data["result"])
-        except (ValueError, KeyError, TypeError) as e:
-            logging.error(f"Failed to parse block number for timestamp {timestamp}: {e}")
-            raise
-    
-    def get_token_transactions(self, contract_address: str, start_block: int, 
-                              end_block: int) -> List[Dict[str, Any]]:
-
-        all_transactions = []
-        current_start = start_block
-        
-        while current_start <= end_block:
-            current_end = min(current_start + self.block_chunk_size - 1, end_block)
-            
-            params = {
-                "module": "account",
-                "action": "tokentx",
-                "contractaddress": contract_address,
-                "startblock": current_start,
-                "endblock": current_end,
-                "sort": "asc"
-            }
-            
-            print(f"Fetching transactions for blocks {current_start} - {current_end}...")
-            
-            try:
-                data = self.etherscan_api_request(params)
-                transactions = data.get("result", [])
-                
-                if transactions:
-                    print(f"Found {len(transactions)} transactions")
-                    all_transactions.extend(transactions)
-                    
-            except Exception as e:
-                logging.error(f"Error fetching transactions for blocks {current_start}-{current_end}: {e}")
-            finally:
-                current_start = current_end + 1
-                time.sleep(self.delay_between_requests)
-        
-        return all_transactions
-    
     def get_wallet_transactions(self, wallet_address: str, count: int = 10) -> List[Dict[str, Any]]:
 
         params = {
