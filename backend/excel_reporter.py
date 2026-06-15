@@ -1,7 +1,8 @@
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from openpyxl import Workbook
 from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
 from .config_manager import ConfigManager
 from shared.constants.config_constants import ConfigConstants
 
@@ -42,7 +43,7 @@ class ExcelReporter:
                 return new_name
             suffix += 1
     
-    def _create_header_info(self, token_name: str = None) -> List[str]:
+    def _create_header_info(self, token_name: Optional[str] = None) -> List[str]:
         
         config = self.config_manager.config
         
@@ -88,6 +89,8 @@ class ExcelReporter:
         
         workbook = Workbook()
         worksheet = workbook.active
+        if worksheet is None:
+            raise RuntimeError("Failed to create the Excel worksheet")
         worksheet.title = "Wallet Analysis"
         
         current_row = 1
@@ -156,6 +159,8 @@ class ExcelReporter:
         
         wb = Workbook()
         ws = wb.active
+        if ws is None:
+            raise RuntimeError("Failed to create the Excel worksheet")
         current_row = 1
         
         for header in header_lines:
@@ -202,14 +207,22 @@ class ExcelReporter:
 
             for col in ws.columns:
                 max_length = 0
-                col_letter = col[0].column_letter
+                column_index = col[0].column
+                if column_index is None:
+                    continue
+                col_letter = get_column_letter(column_index)
                 if col_letter != 'A':
                     for cell in col:
                         if cell.value:
                             max_length = max(max_length, len(str(cell.value)))
                     ws.column_dimensions[col_letter].width = max_length + 2
-            
-            if 'B' not in [col[0].column_letter for col in ws.columns if len(col) > 0]:
+
+            existing_letters = [
+                get_column_letter(col[0].column)
+                for col in ws.columns
+                if len(col) > 0 and col[0].column is not None
+            ]
+            if 'B' not in existing_letters:
                 ws.column_dimensions['B'].width = 60
         else:
             ws.cell(row=current_row, column=1, value="Brak danych")
@@ -264,7 +277,7 @@ class ExcelReporter:
             "wallets_with_usd_value": valid_usd_count
         }
     
-    def print_summary(self, results: List[Dict[str, Any]], execution_time: str = None) -> None:
+    def print_summary(self, results: List[Dict[str, Any]], execution_time: Optional[str] = None) -> None:
         
         stats = self.generate_summary_statistics(results)
         

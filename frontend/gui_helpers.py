@@ -3,7 +3,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
-from typing import Tuple, List
+from typing import Tuple, List, Optional, Any
 from shared.datetime_helper import DateTimeHelper
 
 class GUIHelpers:
@@ -17,7 +17,7 @@ class GUIHelpers:
     
     @staticmethod
     def create_datetime_section(parent: tk.Widget, label_text: str, row: int, 
-                              initial_date: datetime = None, padx: int = 5, pady: int = 5) -> Tuple[DateEntry, ttk.Combobox, ttk.Combobox, ttk.Combobox]:
+                              initial_date: Optional[datetime] = None, padx: int = 5, pady: int = 5) -> Tuple[DateEntry, ttk.Combobox, ttk.Combobox, ttk.Combobox]:
         
         frame = ttk.Frame(parent)
         frame.grid(row=row, column=0, padx=padx, pady=pady, sticky="ew")
@@ -102,10 +102,11 @@ class GUIHelpers:
     def configure_ttk_style() -> None:
         
         style = ttk.Style()
+        colors: Any = style.colors
         style.configure("info.TCombobox",
                        fieldbackground="white",
-                       bordercolor=style.colors.info,
-                       arrowcolor=style.colors.info)
+                       bordercolor=colors.info,
+                       arrowcolor=colors.info)
         style.map("info.TCombobox", fieldbackground=[("readonly", "white")])
     
     @staticmethod

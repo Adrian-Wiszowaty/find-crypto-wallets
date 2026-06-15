@@ -1,7 +1,7 @@
 import requests
 import time
 import logging
-from typing import Union, Dict
+from typing import Union, Dict, Optional
 from .config_manager import ConfigManager
 from shared.constants.api_constants import ApiConstants
 from shared.constants.network_constants import NetworkConstants
@@ -26,7 +26,7 @@ class ExchangeRateService:
         self.max_retries = ApiConstants.MAX_RETRIES
         self.delay_between_requests = ApiConstants.DELAY_BETWEEN_REQUESTS
         
-    def get_exchange_rate(self, token_address: str, retries: int = None) -> Union[float, str]:
+    def get_exchange_rate(self, token_address: str, retries: Optional[int] = None) -> Union[float, str]:
         if retries is None:
             retries = self.max_retries
             
@@ -75,7 +75,7 @@ class ExchangeRateService:
         logging.error(f"Failed to fetch the exchange rate for token {token_address} after {retries} attempts")
         return "error"
     
-    def get_token_usd_rate(self, token_address: str, retries: int = None) -> Union[float, str]:
+    def get_token_usd_rate(self, token_address: str, retries: Optional[int] = None) -> Union[float, str]:
         if retries is None:
             retries = self.max_retries
             
@@ -118,7 +118,7 @@ class ExchangeRateService:
         logging.error(f"Failed to fetch the USD rate for token {token_address} after {retries} attempts")
         return "error"
     
-    def get_native_to_usd_rate(self, retries: int = None) -> Union[float, str]:
+    def get_native_to_usd_rate(self, retries: Optional[int] = None) -> Union[float, str]:
         if retries is None:
             retries = 3
             
@@ -163,9 +163,9 @@ class ExchangeRateService:
     
     def calculate_token_value_in_usd(self, token_amount: float, token_address: str) -> Dict[str, Union[float, str]]:
         
-        result = {
+        result: Dict[str, Union[float, str]] = {
             "native_value": "error",
-            "usd_value": "error", 
+            "usd_value": "error",
             "exchange_rate": "error",
             "native_usd_rate": "error"
         }
@@ -217,7 +217,7 @@ class ExchangeRateService:
                 isinstance(exchange_rate, (int, float)) and 
                 isinstance(native_usd_rate, (int, float)))
     
-    def get_token_name(self, token_address: str, retries: int = None) -> Union[str, str]:
+    def get_token_name(self, token_address: str, retries: Optional[int] = None) -> str:
         
         if retries is None:
             retries = self.max_retries

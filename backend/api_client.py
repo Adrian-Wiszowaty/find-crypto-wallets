@@ -16,8 +16,8 @@ class ApiClient:
         self.delay_between_requests = ApiConstants.DELAY_BETWEEN_REQUESTS
         self.block_chunk_size = ApiConstants.BLOCK_CHUNK_SIZE
         
-    def _make_request_with_retry(self, url: str, params: Dict[str, Any], 
-                                retries: int = None) -> Optional[Dict[str, Any]]:
+    def _make_request_with_retry(self, url: str, params: Dict[str, Any],
+                                retries: Optional[int] = None) -> Optional[Dict[str, Any]]:
 
         if retries is None:
             retries = self.max_retries

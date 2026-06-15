@@ -3,7 +3,7 @@ import sys
 import threading
 import tkinter as tk
 from tkinter import Text, messagebox, PhotoImage
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Optional, Any
 import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from backend.config_manager import ConfigManager
@@ -16,7 +16,7 @@ from shared.constants.message_constants import MessageConstants
 
 class MainWindow:
     
-    def __init__(self, main_function: Callable = None):
+    def __init__(self, main_function: Optional[Callable] = None):
         self.config_manager = ConfigManager()
         self.main_function = main_function
         
@@ -53,11 +53,12 @@ class MainWindow:
     def _setup_styles(self) -> None:
         
         style = ttk.Style()
+        colors: Any = style.colors
         style.configure(
             "info.TCombobox",
             fieldbackground="white",
-            bordercolor=style.colors.info,
-            arrowcolor=style.colors.info
+            bordercolor=colors.info,
+            arrowcolor=colors.info
         )
         style.map("info.TCombobox", fieldbackground=[("readonly", "white")])
     
@@ -93,7 +94,7 @@ class MainWindow:
             row=0, column=1, padx=self.padx, pady=self.pady, sticky="ew"
         )
     
-    def _create_time_combobox(self, parent: ttk.Widget, values: list) -> ttk.Combobox:
+    def _create_time_combobox(self, parent: tk.Widget, values: list) -> ttk.Combobox:
         
         combo = ttk.Combobox(
             parent, values=values, width=3, 
@@ -102,7 +103,7 @@ class MainWindow:
         combo.current(0)
         return combo
     
-    def _create_datetime_section(self, parent: ttk.Widget, row: int) -> Tuple[DateEntry, ttk.Combobox, ttk.Combobox, ttk.Combobox]:
+    def _create_datetime_section(self, parent: tk.Widget, row: int) -> Tuple[DateEntry, ttk.Combobox, ttk.Combobox, ttk.Combobox]:
         
         for col in range(5):
             parent.grid_columnconfigure(col, weight=0)
@@ -315,7 +316,8 @@ class MainWindow:
         
         def run_process():
             try:
-                self.main_function()
+                if self.main_function is not None:
+                    self.main_function()
                 self._show_completion_message(success=True)
             except Exception as e:
                 print(f"Error during execution: {e}")

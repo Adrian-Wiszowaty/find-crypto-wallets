@@ -36,7 +36,7 @@ class CacheManager:
             with open(self.frequency_cache_file, "w") as f:
                 json.dump(cache, f, indent=2)
             logging.info(f"Saved frequency cache: {len(cache)} entries")
-        except (IOError, json.JSONEncodeError) as e:
+        except (IOError, TypeError, ValueError) as e:
             logging.error(f"Error saving cache to {self.frequency_cache_file}: {e}")
     
     def load_generic_cache(self, cache_filename: str) -> Dict[str, Any]:
@@ -64,7 +64,7 @@ class CacheManager:
             with open(cache_path, "w") as f:
                 json.dump(cache, f, indent=2, ensure_ascii=False)
             logging.info(f"Saved cache {cache_filename}: {len(cache)} entries")
-        except (IOError, json.JSONEncodeError) as e:
+        except (IOError, TypeError, ValueError) as e:
             logging.error(f"Error saving cache to {cache_path}: {e}")
     
     def clear_cache(self, cache_filename: Optional[str] = None) -> None:

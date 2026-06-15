@@ -1,6 +1,6 @@
 import time
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from .api_client import ApiClient
 from shared.constants.api_constants import ApiConstants
 
@@ -89,7 +89,7 @@ class BlockchainAnalyzer:
         
         return all_txs
     
-    def get_wallet_transactions(self, wallet: str, count: int = 10, retries: int = None) -> List[Dict[str, Any]]:
+    def get_wallet_transactions(self, wallet: str, count: int = 10, retries: Optional[int] = None) -> List[Dict[str, Any]]:
         
         if retries is None:
             retries = ApiConstants.MAX_RETRIES

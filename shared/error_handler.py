@@ -1,12 +1,14 @@
+import json
 import logging
+import os
 from typing import Any, Callable, Optional
 from functools import wraps
 
 class ErrorHandler:
     
     @staticmethod
-    def safe_execute(func: Callable, *args, default_return=None, 
-                    log_error: bool = True, error_message: str = None, **kwargs) -> Any:
+    def safe_execute(func: Callable, *args, default_return=None,
+                    log_error: bool = True, error_message: Optional[str] = None, **kwargs) -> Any:
         
         try:
             return func(*args, **kwargs)
@@ -17,15 +19,12 @@ class ErrorHandler:
             return default_return
     
     @staticmethod
-    def safe_json_load(file_path: str, default_return: dict = None) -> dict:
-        
+    def safe_json_load(file_path: str, default_return: Optional[dict] = None) -> dict:
+
         if default_return is None:
             default_return = {}
-            
+
         try:
-            import json
-            import os
-            
             if not os.path.exists(file_path):
                 logging.warning(f"Plik nie istnieje: {file_path}")
                 return default_return
@@ -44,9 +43,6 @@ class ErrorHandler:
     def safe_json_save(data: dict, file_path: str, create_dirs: bool = True) -> bool:
         
         try:
-            import json
-            import os
-            
             if create_dirs:
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
                 
@@ -79,14 +75,16 @@ class ErrorHandler:
                             time.sleep(delay * (attempt + 1))
                         else:
                             logging.error(f"All attempts failed for {func.__name__}")
-                            
-                raise last_exception
+
+                if last_exception is not None:
+                    raise last_exception
+                raise RuntimeError(f"All attempts failed for {func.__name__}")
             return wrapper
         return decorator
     
     @staticmethod
-    def validate_numeric_input(value: Any, min_value: float = None, 
-                             max_value: float = None) -> Optional[float]:
+    def validate_numeric_input(value: Any, min_value: Optional[float] = None,
+                             max_value: Optional[float] = None) -> Optional[float]:
         
         try:
             num_value = float(value)
