@@ -1,44 +1,85 @@
-## Opis
+# Find Crypto Wallets
 
-Aplikacja analizuje transakcje blockchain w trzech kluczowych punktach czasowych (T1, T2, T3), gdzie T1-T2 to okres zakupów, a T3 to moment weryfikacji. System automatycznie filtruje boty i podejrzane portfele poprzez analizę częstotliwości transakcji, sprawdzając czy odstępy między operacjami nie są zbyt krótkie. 
+Narzędzie z interfejsem graficznym, które wyszukuje portfele early-buyerów danego tokena ERC-20.
+Podajesz adres kontraktu i trzy punkty w czasie, a aplikacja pobiera transakcje on-chain,
+odfiltrowuje boty, wybiera portfele które kupiły wcześnie i utrzymały tokeny, po czym wycenia
+ich salda w USD i zapisuje wynik do pliku Excel.
 
-Narzędzie pobiera dane z sieci blockchain przez dedykowane API, kalkuluje aktualne kursy tokenów oraz przelicza wartości na USD. Wykryte portfele muszą spełniać kryteria: zachowanie minimum 50% zakupionych tokenów oraz posiadanie wartości powyżej 100 USD w momencie T3.
+## Skąd pomysł
 
-Wszystkie wyniki są eksportowane do pliku Excel zawierających historię transakcji, analizy sald oraz statystyki każdego portfela. Aplikacja oferuje intuicyjny interfejs graficzny z podglądem logów w czasie rzeczywistym oraz zaawansowany system cachowania dla optymalizacji wydajności podczas przetwarzania dużych ilości danych blockchain. 
+Zaczęło się od ręcznego przeglądania Etherscana. Chciałem sprawdzić, które portfele kupiły dany
+token w pierwszych godzinach po starcie i faktycznie go utrzymały — zamiast sprzedać po kilku
+minutach jak boty. Przy setkach transferów w oknie czasowym robienie tego ręcznie było mozolne
+i łatwo było coś przeoczyć.
 
-## Najważniejsze funkcjonalności
+Napisałem więc skrypt, który pobiera wszystkie transfery tokena w zadanym przedziale, grupuje je
+po portfelach i sam liczy, kto kupił, ile utrzymał i ile to było warte na wybrany dzień. Z czasem
+dorosło to do narzędzia z GUI, filtrowaniem botów i eksportem do Excela.
 
--  **Automatyczna analiza portfeli** - wyszukiwanie i analiza transakcji kryptowalut
--  **Eksport do Excel** - generowanie szczegółowych raportów w formacie .xlsx
--  **Śledzenie kursów walut** - automatyczne pobieranie aktualnych kursów
--  **Interfejs graficzny** - intuicyjna aplikacja GUI z podglądem logów
--  **Analiza częstotliwości transakcji** - wykrywanie podejrzanych wzorców aktywności
--  **System cachowania** - optymalizacja wydajności poprzez buforowanie danych
+## Co potrafi
+
+- Pobiera wszystkie transfery tokena z zadanego okna czasowego (T1-T3) z wybranej sieci.
+- Wskazuje portfele, które kupiły w oknie zakupów (T1-T2) i utrzymały tokeny do dnia weryfikacji (T3).
+- Odfiltrowuje boty i podejrzane adresy na podstawie częstotliwości transakcji.
+- Wycenia pozostałe salda w tokenie natywnym i w USD (Dexscreener + CoinGecko).
+- Eksportuje gotowy ranking do pliku `.xlsx`.
+
+## Przykład
+
+![GUI](gui.png)
+![Excel](excel.png)
+
+## Jak to działa
+
+Aplikacja prowadzi przez cztery etapy:
+
+1. **Konfiguracja** — w GUI wybierasz sieć, wklejasz adres kontraktu i ustawiasz trzy znaczniki
+   czasu: początek zakupów (T1), koniec zakupów (T2) i dzień weryfikacji (T3).
+2. **Pobieranie** — daty są zamieniane na numery bloków, a transfery tokena ściągane z Etherscan
+   V2 API porcjami po zakresach bloków.
+3. **Filtrowanie** — transakcje są grupowane po portfelach; kandydaci z okna T1-T2 przechodzą
+   przez analizę częstotliwości, która odrzuca boty.
+4. **Wycena i raport** — dla portfeli, które utrzymały minimum 50% zakupu, liczone jest saldo na
+   dzień T3, przeliczane na USD i zapisywane do Excela.
+
+Logika jest rozbita na warstwy: pobieranie danych, analiza portfeli, wycena i raport. Klient API
+jest wstrzykiwany do serwisów (dependency injection), więc każdą część da się testować osobno, a
+definicje sieci (ETH, BSC, Base) siedzą w jednym miejscu — dołożenie kolejnej sprowadza się do
+dopisania wpisu w `network_constants.py`.
+
+```text
+backend/
+  api_client.py             zapytania do Etherscan / Dexscreener / CoinGecko z ponawianiem
+  blockchain_analyzer.py    bloki oraz pobieranie i grupowanie transakcji tokena
+  wallet_analyzer.py        filtrowanie botów i symulacja sald portfeli (Decimal)
+  exchange_rate_service.py  kursy tokena i przeliczenie na USD, z cachowaniem par
+  excel_reporter.py         generowanie raportu .xlsx
+  config_manager.py         konfiguracja i definicje obsługiwanych sieci
+  wallet_processor.py       spina cały przepływ analizy
+frontend/
+  gui_app.py                interfejs graficzny (ttkbootstrap) z podglądem logów
+shared/
+  constants/                progi analizy, sieci, formaty i komunikaty
+  datetime_helper.py        parsowanie dat w strefie Europe/Warsaw
+```
 
 ## Wymagania
 
-- Python 3.10+
-- requests
-- openpyxl
-- ttkbootstrap
+- Python 3.9+
+- Darmowy klucz API Etherscan (jeden klucz działa dla ETH, BSC i Base)
 
 ## Instalacja
 
 ```bash
-git clone https://github.com/adrian-wiszowaty/find-crypto-wallets.git
+git clone https://github.com/Adrian-Wiszowaty/find-crypto-wallets.git
 cd find-crypto-wallets
-pip install requests openpyxl ttkbootstrap
+python -m venv .venv && source .venv/bin/activate
+pip install -e .
+cp .env.example .env
 ```
 
-## Konfiguracja
-
-Podstawowe dane jak daty, sieć i nr kontraktu definiujemy w GUI, natomiast bardziej zaawansowane dane jak np jaką wartość procentową ma posiadać portfel na dzień T3 definiujemy w stałych w katalogu 'constants'.
-
-### Parametry konfiguracji:
-
-- `NETWORK` - sieć blockchain
-- `T1_STR`, `T2_STR`, `T3_STR` - punkty czasowe do analizy (format: DD-MM-YYYY HH:MM:SS)
-- `TOKEN_CONTRACT_ADDRESS` - adres kontraktu tokena do analizy
+Otwórz `.env` i wklej klucz API. Darmowy klucz Etherscan wygenerujesz na
+<https://etherscan.io/myapikey>.
 
 ## Uruchomienie
 
@@ -46,35 +87,34 @@ Podstawowe dane jak daty, sieć i nr kontraktu definiujemy w GUI, natomiast bard
 python app.py
 ```
 
-## Przykład działania
+W oknie aplikacji wybierasz sieć, wklejasz adres kontraktu tokena, ustawiasz trzy znaczniki czasu
+(T1 ≤ T2 ≤ T3) i klikasz **Uruchom analizę**. Logi lecą na żywo w oknie, a gotowy raport ląduje
+w folderze `wallets/`.
 
-Po uruchomieniu aplikacja:
+## Konfiguracja
 
-1. **Ładuje interfejs graficzny** z konfigurowalnymi parametrami
-2. **Analizuje transakcje** w wybranych przedziałach czasowych
-3. **Pobiera dane z blockchain** API dla wybranej sieci
-4. **Generuje raporty Excel** z wynikami analizy portfeli
-5. **Wyświetla logi** w czasie rzeczywistym w interfejsie użytkownika
-6. **Zapisuje wyniki** w folderze `wallets/`
+Klucz API trzymany jest w `.env` (wzór w `.env.example`), pozostałe parametry ustawiasz w GUI lub
+w stałych. Daty podajesz w formacie `DD-MM-YYYY HH:MM:SS` (czas lokalny Europe/Warsaw).
 
-### Struktura wygenerowanych raportów:
-- Szczegółowe informacje o portfelach
-- Analiza częstotliwości i wzorców transakcji
-- Wartości w USD z aktualnymi kursami
+| Parametr | Gdzie | Opis |
+|---|---|---|
+| `ETHERSCAN_API_KEY` | `.env` | Klucz API Etherscan (wymagany) |
+| `NETWORK` | GUI | Sieć: `ETH`, `BSC` lub `BASE` (domyślnie `ETH`) |
+| `T1`, `T2`, `T3` | GUI | Początek zakupów, koniec zakupów, dzień weryfikacji |
+| `TOKEN_CONTRACT_ADDRESS` | GUI | Adres kontraktu analizowanego tokena |
+| `MIN_BALANCE_PERCENTAGE` | `api_constants.py` | Minimalny % zakupu, jaki portfel musi utrzymać do T3 (domyślnie 50) |
+| `MIN_USD_VALUE` | `api_constants.py` | Minimalna wartość salda w USD, by portfel trafił do raportu (domyślnie 100) |
 
-## Zrzuty ekranu
-![GUI](gui.png)
-![Excel](excel.png)
+Pozostałe progi (częstotliwość transakcji, rozmiar porcji bloków, limity ponawiania) znajdziesz
+w `shared/constants/api_constants.py`.
 
+## Testy
 
-## Technologie
-
-- **Python 3** - język programowania
-- **tkinter + ttkbootstrap** - interfejs graficzny
-- **openpyxl** - generowanie plików Excel
-- **requests** - komunikacja z API blockchain
-- **BASE Network API** - dane blockchain
+```bash
+pip install -e ".[dev]"
+pytest
+```
 
 ## Licencja
 
-MIT
+MIT — szczegóły w [LICENSE](LICENSE).
