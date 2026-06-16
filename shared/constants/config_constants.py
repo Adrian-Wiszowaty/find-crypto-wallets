@@ -3,7 +3,7 @@ from shared.constants.api_constants import ApiConstants
 class ConfigConstants:
     
     DATE_FORMAT = "%d-%m-%Y %H:%M:%S"
-    TIMEZONE_OFFSET_HOURS = 1
+    LOCAL_TIMEZONE = "Europe/Warsaw"
     
     DEFAULT_CONFIG = {
         "NETWORK": "ETH",
