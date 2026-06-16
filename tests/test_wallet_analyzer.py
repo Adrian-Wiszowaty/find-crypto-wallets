@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from backend.wallet_analyzer import WalletAnalyzer
 
 WALLET = "0x1111111111111111111111111111111111111111"
@@ -42,6 +44,15 @@ def test_simulate_applies_token_decimals():
     analyzer = _bare_analyzer()
     transactions = [_tx(100, OTHER, WALLET, 1500, decimals=2)]
     assert analyzer.simulate_wallet_balance(WALLET, transactions, 100, 200, 300) == (15.0, 15.0, 1, 0)
+
+
+def test_simulate_keeps_large_amounts_exact():
+    analyzer = _bare_analyzer()
+    big = 9007199254740993
+    transactions = [_tx(100 + i, OTHER, WALLET, big) for i in range(3)]
+    purchased, _, purchase_count, _ = analyzer.simulate_wallet_balance(WALLET, transactions, 100, 200, 300)
+    assert purchase_count == 3
+    assert purchased == Decimal(big) * 3
 
 
 def _frequency_analyzer() -> WalletAnalyzer:

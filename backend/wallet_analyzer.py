@@ -1,6 +1,7 @@
 import json
 import os
 import logging
+from decimal import Decimal, InvalidOperation
 from typing import Dict, List, Tuple, Any, Optional
 from .config_manager import ConfigManager
 from .api_client import ApiClient
@@ -15,7 +16,7 @@ class WalletAnalyzer:
         self.min_frequency_violations = ApiConstants.MIN_FREQUENCY_VIOLATIONS
         self.min_transaction_count = ApiConstants.MIN_TRANSACTION_COUNT
         self.min_usd_value = ApiConstants.MIN_USD_VALUE
-        self.min_balance_percentage = ApiConstants.MIN_BALANCE_PERCENTAGE / 100.0
+        self.min_balance_percentage = Decimal(ApiConstants.MIN_BALANCE_PERCENTAGE) / 100
         
         paths = config_manager.get_paths_config()
         self.cache_file = paths["cache_file"]
@@ -92,10 +93,10 @@ class WalletAnalyzer:
         return True
     
     def simulate_wallet_balance(self, wallet: str, wallet_transactions: List[Dict[str, Any]], 
-                               t1_unix: int, t2_unix: int, t3_unix: int) -> Tuple[float, float, int, int]:
-        
-        purchased = 0.0
-        balance = 0.0
+                               t1_unix: int, t2_unix: int, t3_unix: int) -> Tuple[Decimal, Decimal, int, int]:
+
+        purchased = Decimal("0")
+        balance = Decimal("0")
         purchase_count = 0
         sale_count = 0
         
@@ -109,8 +110,8 @@ class WalletAnalyzer:
             
             try:
                 token_decimals = int(tx.get("tokenDecimal", "0"))
-                amount = float(tx["value"]) / (10 ** token_decimals)
-            except (ValueError, TypeError) as e:
+                amount = Decimal(tx["value"]) / (10 ** token_decimals)
+            except (ValueError, TypeError, InvalidOperation) as e:
                 logging.error(f"Error calculating transaction amount: {tx} - {e}")
                 continue
             
@@ -175,8 +176,8 @@ class WalletAnalyzer:
                 continue
             
             if exchange_rate is not None and native_to_usd_rate is not None:
-                native_value = round(final_balance * exchange_rate, 2)
-                usd_value = round(native_value * native_to_usd_rate, 2)
+                native_value = round(final_balance * Decimal(str(exchange_rate)), 2)
+                usd_value = round(native_value * Decimal(str(native_to_usd_rate)), 2)
             else:
                 native_value = None
                 usd_value = None
