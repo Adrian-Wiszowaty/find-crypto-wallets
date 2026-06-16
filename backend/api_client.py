@@ -16,7 +16,7 @@ class ApiClient:
         self.delay_between_requests = ApiConstants.DELAY_BETWEEN_REQUESTS
         self.block_chunk_size = ApiConstants.BLOCK_CHUNK_SIZE
         
-    def _make_request_with_retry(self, url: str, params: Dict[str, Any],
+    def make_request_with_retry(self, url: str, params: Dict[str, Any],
                                 retries: Optional[int] = None) -> Optional[Dict[str, Any]]:
 
         if retries is None:
@@ -62,8 +62,8 @@ class ApiClient:
         params["apikey"] = self.api_key
         
         for attempt in range(1, self.max_retries + 1):
-            data = self._make_request_with_retry(self.api_url, params)
-            
+            data = self.make_request_with_retry(self.api_url, params, retries=1)
+
             if data and self._validate_etherscan_response(data):
                 if data.get("message") in ["No transactions found", "No records found"]:
                     return {"result": []}
@@ -95,7 +95,7 @@ class ApiClient:
                               retries: Optional[int] = None) -> Optional[List[Dict[str, Any]]]:
 
         url = ApiConstants.DEXSCREENER_API_URL.format(token_address.lower())
-        data = self._make_request_with_retry(url, {}, retries=retries)
+        data = self.make_request_with_retry(url, {}, retries=retries)
 
         if data is None:
             return None
@@ -113,7 +113,7 @@ class ApiClient:
         
         for attempt in range(1, 4):
             try:
-                data = self._make_request_with_retry(url, params)
+                data = self.make_request_with_retry(url, params)
                 
                 if not data:
                     continue

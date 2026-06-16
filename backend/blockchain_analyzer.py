@@ -19,7 +19,7 @@ class BlockchainAnalyzer:
         }
         
         try:
-            data = self.api_client._make_request_with_retry(
+            data = self.api_client.make_request_with_retry(
                 self.api_client.api_url, 
                 params
             )
@@ -58,7 +58,7 @@ class BlockchainAnalyzer:
             print(f"Pobieram transakcje dla bloków {current_start} - {current_end}...")
             
             try:
-                data = self.api_client._make_request_with_retry(
+                data = self.api_client.make_request_with_retry(
                     self.api_client.api_url, 
                     params
                 )
