@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "find-crypto-wallets"
+version = "0.1.0"
+description = "Desktop tool for finding early-buyer wallets of an ERC-20 token across EVM networks"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Wiszu" }]
+dependencies = [
+    "requests>=2.31",
+    "ttkbootstrap>=1.10",
+    "openpyxl>=3.1",
+    "python-dotenv>=1.0",
+    "tzdata; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+include = ["backend*", "frontend*", "shared*"]
+namespaces = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.pyright]
+exclude = ["tests", ".venv"]
