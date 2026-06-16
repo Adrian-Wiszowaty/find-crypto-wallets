@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Union
 from shared.constants.config_constants import ConfigConstants
 from shared.constants.message_constants import MessageConstants
 
@@ -27,25 +26,7 @@ class DateTimeHelper:
         
         minutes, secs = divmod(seconds, 60)
         return f"{int(minutes):02d}:{int(secs):02d}"
-    
-    @staticmethod
-    def timestamp_to_readable(timestamp: Union[int, str]) -> str:
-        
-        try:
-            if isinstance(timestamp, str):
-                timestamp = int(timestamp)
-            
-            dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
-        except (ValueError, OSError) as e:
-            logging.error(f"Timestamp conversion error {timestamp}: {e}")
-            return f"Invalid timestamp: {timestamp}"
-    
-    @staticmethod
-    def get_current_timestamp() -> int:
-        
-        return int(datetime.now(timezone.utc).timestamp())
-    
+
     @staticmethod
     def validate_date_range(t1_str: str, t2_str: str, t3_str: str) -> bool:
         

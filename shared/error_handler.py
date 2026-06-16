@@ -1,23 +1,10 @@
 import json
 import logging
 import os
-from typing import Any, Callable, Optional
-from functools import wraps
+from typing import Optional
 
 class ErrorHandler:
-    
-    @staticmethod
-    def safe_execute(func: Callable, *args, default_return=None,
-                    log_error: bool = True, error_message: Optional[str] = None, **kwargs) -> Any:
-        
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            if log_error:
-                msg = error_message or f"Error while executing {func.__name__}: {e}"
-                logging.error(msg)
-            return default_return
-    
+
     @staticmethod
     def safe_json_load(file_path: str, default_return: Optional[dict] = None) -> dict:
 
@@ -53,52 +40,3 @@ class ErrorHandler:
         except Exception as e:
             logging.error(f"Error saving file {file_path}: {e}")
             return False
-    
-    @staticmethod
-    def retry_on_exception(max_retries: int = 3, delay: float = 0.1, 
-                          exceptions: tuple = (Exception,)) -> Callable:
-        
-        def decorator(func: Callable) -> Callable:
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                import time
-                
-                last_exception = None
-                
-                for attempt in range(max_retries + 1):
-                    try:
-                        return func(*args, **kwargs)
-                    except exceptions as e:
-                        last_exception = e
-                        if attempt < max_retries:
-                            logging.warning(f"Attempt {attempt + 1} failed for {func.__name__}: {e}")
-                            time.sleep(delay * (attempt + 1))
-                        else:
-                            logging.error(f"All attempts failed for {func.__name__}")
-
-                if last_exception is not None:
-                    raise last_exception
-                raise RuntimeError(f"All attempts failed for {func.__name__}")
-            return wrapper
-        return decorator
-    
-    @staticmethod
-    def validate_numeric_input(value: Any, min_value: Optional[float] = None,
-                             max_value: Optional[float] = None) -> Optional[float]:
-        
-        try:
-            num_value = float(value)
-            
-            if min_value is not None and num_value < min_value:
-                logging.error(f"Value {num_value} is below the minimum {min_value}")
-                return None
-                
-            if max_value is not None and num_value > max_value:
-                logging.error(f"Value {num_value} is above the maximum {max_value}")
-                return None
-                
-            return num_value
-            
-        except (ValueError, TypeError) as e:
-            logging.error(f"Error converting value '{value}' to a number: {e}")
-            return None

@@ -4,7 +4,6 @@ import ttkbootstrap as ttk
 from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
 from typing import Tuple, List, Optional, Any
-from shared.datetime_helper import DateTimeHelper
 
 class GUIHelpers:
     
@@ -108,15 +107,3 @@ class GUIHelpers:
                        bordercolor=colors.info,
                        arrowcolor=colors.info)
         style.map("info.TCombobox", fieldbackground=[("readonly", "white")])
-    
-    @staticmethod
-    def validate_datetime_widgets(t1_widgets: Tuple, t2_widgets: Tuple, t3_widgets: Tuple) -> bool:
-        
-        try:
-            t1_str = GUIHelpers.get_datetime_string(t1_widgets)
-            t2_str = GUIHelpers.get_datetime_string(t2_widgets)
-            t3_str = GUIHelpers.get_datetime_string(t3_widgets)
-            
-            return DateTimeHelper.validate_date_range(t1_str, t2_str, t3_str)
-        except Exception as e:
-            raise ValueError(f"GUI validation error: {e}")
