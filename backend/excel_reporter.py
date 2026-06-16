@@ -1,4 +1,5 @@
 import os
+import re
 from typing import List, Dict, Any
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -28,7 +29,7 @@ class ExcelReporter:
         t2_formatted = format_date_for_filename(t2_str)
         t3_formatted = format_date_for_filename(t3_str)
 
-        safe_token_name = token_name.replace("$", "").replace("/", "_").replace("\\", "_").replace(":", "_").replace("*", "_").replace("?", "_").replace("\"", "_").replace("<", "_").replace(">", "_").replace("|", "_")
+        safe_token_name = re.sub(r'[\\/:*?"<>|]', "_", token_name.replace("$", ""))
 
         base_name = os.path.join(self.wallets_folder, f"{safe_token_name}__T1_{t1_formatted}__T2_{t2_formatted}__T3_{t3_formatted}.xlsx")
 
@@ -122,16 +123,11 @@ class ExcelReporter:
             cell = worksheet.cell(row=current_row, column=1, value="Brak danych")
             cell.font = Font(italic=True, color="FF0000")
 
-        worksheet.column_dimensions['A'].width = 5
-
-        worksheet.column_dimensions['B'].width = 60
-
         if results:
-
             self._auto_adjust_column_width(worksheet)
 
-            worksheet.column_dimensions['A'].width = 5
-            worksheet.column_dimensions['B'].width = 60
+        worksheet.column_dimensions['A'].width = 5
+        worksheet.column_dimensions['B'].width = 60
 
         try:
             workbook.save(filename)
