@@ -13,7 +13,7 @@ class ErrorHandler:
 
         try:
             if not os.path.exists(file_path):
-                logging.warning(f"Plik nie istnieje: {file_path}")
+                logging.warning(f"File does not exist: {file_path}")
                 return default_return
                 
             with open(file_path, "r", encoding="utf-8") as f:
