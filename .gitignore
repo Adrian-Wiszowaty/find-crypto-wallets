@@ -6,3 +6,11 @@ backend/cache/
 *.log
 .DS_Store
 .env
+.vscode/
+.venv/
+venv/
+build/
+dist/
+*.spec
+*.app/
+*.dmg
