@@ -62,7 +62,7 @@ def main():
         exchange_rate_service = ExchangeRateService(config_manager, api_client)
 
         token_name = exchange_rate_service.get_token_name(current_token_address)
-        if token_name != "error":
+        if token_name is not None:
             print(f"Wybrany token: {token_name}")
         else:
             print(f"Wybrany token: {current_token_address} (nie udało się pobrać nazwy)")
@@ -107,20 +107,20 @@ def main():
         print(f"Portfeli po weryfikacji: {len(filtered_wallets)}")
 
         exchange_rate = exchange_rate_service.get_exchange_rate(current_token_address, retries=5)
-        if exchange_rate == "error":
-            print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna ustawiona jako 'error'.")
+        if exchange_rate is None:
+            print("Nie udało się pobrać kursu wymiany tokena. Wartość natywna nie zostanie obliczona.")
 
         current_network_config = ConfigManager.get_network_config_by_name(current_network)
         current_native_token_name = current_network_config["native_token_name"]
 
         native_to_usd_rate = exchange_rate_service.get_native_to_usd_rate()
-        if native_to_usd_rate == "error":
+        if native_to_usd_rate is None:
             print("Nie udało się pobrać kursu wymiany natywnego tokena do USD.")
         else:
             print(f"Kurs wymiany {current_native_token_name} -> USD: {native_to_usd_rate}")
 
         token_usd_rate = exchange_rate_service.get_token_usd_rate(current_token_address, retries=5)
-        if token_usd_rate == "error":
+        if token_usd_rate is None:
             print("Nie udało się pobrać kursu tokena do USD.")
         else:
             print(f"Kurs wymiany tokena -> USD na dzień T3: ${token_usd_rate:.6f}")

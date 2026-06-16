@@ -1,7 +1,7 @@
 import requests
 import time
 import logging
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from .config_manager import ConfigManager
 from shared.constants.api_constants import ApiConstants
 
@@ -102,7 +102,7 @@ class ApiClient:
 
         return data.get("pairs") or []
 
-    def get_native_token_usd_price(self) -> Union[float, str]:
+    def get_native_token_usd_price(self) -> Optional[float]:
 
         token_id = self.network_config["native_token_full_name"]
         url = ApiConstants.COINGECKO_API_URL
@@ -132,5 +132,5 @@ class ApiClient:
             
             if attempt < 3:
                 time.sleep(10 if attempt == 1 else self.delay_between_requests * attempt)
-        
-        return "error"
+
+        return None

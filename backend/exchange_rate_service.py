@@ -1,5 +1,5 @@
 import logging
-from typing import Union, Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any
 from .api_client import ApiClient
 from .config_manager import ConfigManager
 
@@ -24,11 +24,11 @@ class ExchangeRateService:
 
         return pairs
 
-    def get_exchange_rate(self, token_address: str, retries: Optional[int] = None) -> Union[float, str]:
+    def get_exchange_rate(self, token_address: str, retries: Optional[int] = None) -> Optional[float]:
         pairs = self._fetch_pairs(token_address, retries)
         if pairs is None:
             logging.error(f"Failed to fetch the exchange rate for token {token_address}")
-            return "error"
+            return None
 
         token_addr = token_address.lower()
         for pair in pairs:
@@ -47,13 +47,13 @@ class ExchangeRateService:
                 logging.error(f"Error parsing exchange rate for token {token_address}: {e}")
 
         logging.error(f"No native pair found for token {token_address}")
-        return "error"
+        return None
 
-    def get_token_usd_rate(self, token_address: str, retries: Optional[int] = None) -> Union[float, str]:
+    def get_token_usd_rate(self, token_address: str, retries: Optional[int] = None) -> Optional[float]:
         pairs = self._fetch_pairs(token_address, retries)
         if pairs is None:
             logging.error(f"Failed to fetch the USD rate for token {token_address}")
-            return "error"
+            return None
 
         for pair in pairs:
             price_usd = pair.get("priceUsd")
@@ -65,13 +65,13 @@ class ExchangeRateService:
                 logging.error(f"Error parsing USD rate for token {token_address}: {e}")
 
         logging.error(f"No USD price found for token {token_address}")
-        return "error"
+        return None
 
-    def get_token_name(self, token_address: str, retries: Optional[int] = None) -> str:
+    def get_token_name(self, token_address: str, retries: Optional[int] = None) -> Optional[str]:
         pairs = self._fetch_pairs(token_address, retries)
         if pairs is None:
             logging.error(f"Failed to fetch the token name for token {token_address}")
-            return "error"
+            return None
 
         token_addr = token_address.lower()
         for pair in pairs:
@@ -79,12 +79,12 @@ class ExchangeRateService:
             quote_token = pair.get("quoteToken", {})
 
             if base_token.get("address", "").lower() == token_addr:
-                return base_token.get("name") or base_token.get("symbol") or "error"
+                return base_token.get("name") or base_token.get("symbol")
             if quote_token.get("address", "").lower() == token_addr:
-                return quote_token.get("name") or quote_token.get("symbol") or "error"
+                return quote_token.get("name") or quote_token.get("symbol")
 
         logging.error(f"No token name found for token {token_address}")
-        return "error"
+        return None
 
-    def get_native_to_usd_rate(self) -> Union[float, str]:
+    def get_native_to_usd_rate(self) -> Optional[float]:
         return self.api_client.get_native_token_usd_price()

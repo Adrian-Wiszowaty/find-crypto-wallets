@@ -1,7 +1,7 @@
 import json
 import os
 import logging
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 from .config_manager import ConfigManager
 from .api_client import ApiClient
 from shared.constants.api_constants import ApiConstants
@@ -157,7 +157,7 @@ class WalletAnalyzer:
     def analyze_wallet_balances(self, wallets: List[str], 
                                wallet_transactions: Dict[str, List[Dict[str, Any]]],
                                t1_unix: int, t2_unix: int, t3_unix: int,
-                               exchange_rate, native_to_usd_rate) -> List[Dict[str, Any]]:
+                               exchange_rate: Optional[float], native_to_usd_rate: Optional[float]) -> List[Dict[str, Any]]:
         
         results = []
         
@@ -174,14 +174,14 @@ class WalletAnalyzer:
             if final_balance < self.min_balance_percentage * purchased:
                 continue
             
-            if exchange_rate != "error" and native_to_usd_rate != "error":
+            if exchange_rate is not None and native_to_usd_rate is not None:
                 native_value = round(final_balance * exchange_rate, 2)
                 usd_value = round(native_value * native_to_usd_rate, 2)
             else:
-                native_value = "error"
-                usd_value = "error"
-            
-            if usd_value != "error" and usd_value < ApiConstants.MIN_USD_VALUE:
+                native_value = None
+                usd_value = None
+
+            if usd_value is not None and usd_value < ApiConstants.MIN_USD_VALUE:
                 print(f"Portfel {wallet} odrzucony ({usd_value} USD < {ApiConstants.MIN_USD_VALUE} USD).")
                 continue
             

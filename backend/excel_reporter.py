@@ -45,8 +45,10 @@ class ExcelReporter:
     def _format_cell_value(self, value: Any, column_key: str) -> Any:
 
         if column_key in ["purchased", "final_balance", "native_value", "usd_value"]:
+            if value is None:
+                return "N/A"
             try:
-                return float(value) if value != "error" else value
+                return float(value)
             except (ValueError, TypeError):
                 return value
 
