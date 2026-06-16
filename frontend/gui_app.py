@@ -167,7 +167,8 @@ class WalletApp:
     def _save_and_run(self):
         
         self.run_button.config(state="disabled")
-        
+        started = False
+
         try:
 
             network = self.network_var.get()
@@ -204,15 +205,17 @@ class WalletApp:
                 self.log_widget.yview(tk.END)
                 
                 threading.Thread(target=self._run_analysis, daemon=True).start()
+                started = True
             else:
                 messagebox.showerror("Błąd", "Nie udało się zapisać konfiguracji!")
-                
+
         except ValueError as e:
             messagebox.showerror("Błąd walidacji", str(e))
         except Exception as e:
             messagebox.showerror("Błąd", f"Wystąpił nieoczekiwany błąd: {e}")
         finally:
-            self.run_button.config(state="normal")
+            if not started:
+                self.run_button.config(state="normal")
     
     def _run_analysis(self):
         
@@ -221,16 +224,18 @@ class WalletApp:
             self._show_success_message()
         except Exception as e:
             self._show_error_message(str(e))
-    
+        finally:
+            self.root.after(0, lambda: self.run_button.config(state="normal"))
+
     def _show_success_message(self):
-        
+
         self._play_sound(success=True)
-        messagebox.showinfo("Sukces", "Operacja zakończona pomyślnie!")
-    
+        self.root.after(0, lambda: messagebox.showinfo("Sukces", "Operacja zakończona pomyślnie!"))
+
     def _show_error_message(self, error_msg: str):
-        
+
         self._play_sound(success=False)
-        messagebox.showerror("Błąd", f"Wystąpił błąd: {error_msg}")
+        self.root.after(0, lambda: messagebox.showerror("Błąd", f"Wystąpił błąd: {error_msg}"))
     
     def _play_sound(self, success: bool = True):
         
