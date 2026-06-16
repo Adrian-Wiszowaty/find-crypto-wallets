@@ -29,5 +29,5 @@ pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.pyright]
-exclude = ["tests", ".venv"]
+exclude = ["**/node_modules", "**/__pycache__", "**/.*", "tests", ".venv"]
 pythonPlatform = "All"
