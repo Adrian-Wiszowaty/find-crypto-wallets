@@ -22,20 +22,21 @@ def load_json_config(config_file=os.path.join(BASE_DIR, FileConstants.FOLDER_CON
         print(f"An error occurred while loading file {config_file}: {e}")
     return {}
 
-os.makedirs(WALLETS_FOLDER, exist_ok=True)
-os.makedirs(LOGS_FOLDER, exist_ok=True)
-os.makedirs(CACHE_FOLDER, exist_ok=True)
+def _setup_environment():
+    os.makedirs(WALLETS_FOLDER, exist_ok=True)
+    os.makedirs(LOGS_FOLDER, exist_ok=True)
+    os.makedirs(CACHE_FOLDER, exist_ok=True)
 
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.ERROR,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    force=True
-)
-logging.getLogger().setLevel(logging.ERROR)
+    logging.basicConfig(
+        filename=LOG_FILE,
+        level=logging.ERROR,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        force=True
+    )
 
 def main():
 
+    _setup_environment()
     start_time = time.time()
 
     try:
