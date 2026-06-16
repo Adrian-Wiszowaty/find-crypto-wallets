@@ -122,14 +122,16 @@ class BlockchainAnalyzer:
                              purchase_start: int, purchase_end: int) -> List[str]:
         
         candidate_wallets = []
-        
+        seen = set()
+
         for tx in transactions:
             try:
                 tx_timestamp = int(tx["timeStamp"])
                 wallet_to = tx["to"].lower()
-                
-                if (purchase_start <= tx_timestamp <= purchase_end and 
-                    wallet_to not in candidate_wallets):
+
+                if (purchase_start <= tx_timestamp <= purchase_end and
+                    wallet_to not in seen):
+                    seen.add(wallet_to)
                     candidate_wallets.append(wallet_to)
                     
             except (ValueError, KeyError) as e:
