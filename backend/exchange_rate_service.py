@@ -1,211 +1,90 @@
-import requests
-import time
 import logging
-from typing import Union, Optional
+from typing import Union, Optional, List, Dict, Any
+from .api_client import ApiClient
 from .config_manager import ConfigManager
-from shared.constants.api_constants import ApiConstants
-from shared.constants.network_constants import NetworkConstants
 
 class ExchangeRateService:
-    
-    def __init__(self, config_manager: ConfigManager):
+
+    def __init__(self, config_manager: ConfigManager, api_client: ApiClient):
         self.config_manager = config_manager
+        self.api_client = api_client
         self.network_config = config_manager.get_network_config()
-        self.native_token_name = self.network_config["native_token_name"]
-        self.native_token_full_name = self.network_config["native_token_full_name"]
-        self.native_address = self.network_config["native_address"]
-        
-        network = config_manager.config.get("NETWORK", "ETH")
-        if network == "BASE":
-            self.wrapped_native_address = NetworkConstants.WETH_ADDRESS_BASE
-        elif network == "ETH":
-            self.wrapped_native_address = NetworkConstants.WETH_ADDRESS_ETH
-        else:
-            self.wrapped_native_address = NetworkConstants.WBNB_ADDRESS_BSC
-        
-        self.max_retries = ApiConstants.MAX_RETRIES
-        self.delay_between_requests = ApiConstants.DELAY_BETWEEN_REQUESTS
-        
+        self.native_address = self.network_config["native_address"].lower()
+        self._pairs_cache: Dict[str, List[Dict[str, Any]]] = {}
+
+    def _fetch_pairs(self, token_address: str, retries: Optional[int] = None) -> Optional[List[Dict[str, Any]]]:
+        token_address = token_address.lower()
+
+        if token_address in self._pairs_cache:
+            return self._pairs_cache[token_address]
+
+        pairs = self.api_client.get_dexscreener_pairs(token_address, retries)
+        if pairs is not None:
+            self._pairs_cache[token_address] = pairs
+
+        return pairs
+
     def get_exchange_rate(self, token_address: str, retries: Optional[int] = None) -> Union[float, str]:
-        if retries is None:
-            retries = self.max_retries
-            
-        attempt = 0
-        rate = None
-        
-        while attempt < retries:
+        pairs = self._fetch_pairs(token_address, retries)
+        if pairs is None:
+            logging.error(f"Failed to fetch the exchange rate for token {token_address}")
+            return "error"
+
+        token_addr = token_address.lower()
+        for pair in pairs:
+            base_addr = pair.get("baseToken", {}).get("address", "").lower()
+            quote_addr = pair.get("quoteToken", {}).get("address", "").lower()
+
+            if self.native_address not in (base_addr, quote_addr):
+                continue
+
             try:
-                url = ApiConstants.DEXSCREENER_API_URL.format(token_address.lower())
-                response = requests.get(url, timeout=10)
-                
-                if response.status_code != 200:
-                    error_msg = f"Server response for token: {response.status_code}, body: {response.text}"
-                    logging.error(error_msg)
-                    raise Exception(f"HTTP error dla tokena: {response.status_code}")
-                
-                data = response.json()
-                pairs = data.get("pairs", [])
-                
-                for pair in pairs:
-                    native_addr = self.wrapped_native_address.lower()
-                    base_token_addr = pair.get("baseToken", {}).get("address", "").lower()
-                    quote_token_addr = pair.get("quoteToken", {}).get("address", "").lower()
-                    
-                    if native_addr in (base_token_addr, quote_token_addr):
-                        if base_token_addr == token_address.lower():
-                            rate = float(pair["priceNative"])
-                        elif quote_token_addr == token_address.lower():
-                            rate = 1 / float(pair["priceNative"])
-                        break
-                
-                if rate is not None:
-                    logging.info(f"Pobrano kurs wymiany dla tokena {token_address}: {rate}")
-                    return rate
-                else:
-                    error_msg = f"Nie znaleziono pary z natywnym tokenem dla tokena {token_address}"
-                    logging.error(error_msg)
-                    raise Exception("Brak odpowiedniej pary w danych API")
-                    
-            except Exception as e:
-                logging.error(f"Attempt {attempt + 1} to fetch the rate failed: {e}")
-                attempt += 1
-                if attempt < retries:
-                    time.sleep(self.delay_between_requests * attempt)
-        
-        logging.error(f"Failed to fetch the exchange rate for token {token_address} after {retries} attempts")
+                if base_addr == token_addr:
+                    return float(pair["priceNative"])
+                if quote_addr == token_addr:
+                    return 1.0 / float(pair["priceNative"])
+            except (KeyError, ValueError, ZeroDivisionError) as e:
+                logging.error(f"Error parsing exchange rate for token {token_address}: {e}")
+
+        logging.error(f"No native pair found for token {token_address}")
         return "error"
-    
+
     def get_token_usd_rate(self, token_address: str, retries: Optional[int] = None) -> Union[float, str]:
-        if retries is None:
-            retries = self.max_retries
-            
-        attempt = 0
-        usd_rate = None
-        
-        while attempt < retries:
+        pairs = self._fetch_pairs(token_address, retries)
+        if pairs is None:
+            logging.error(f"Failed to fetch the USD rate for token {token_address}")
+            return "error"
+
+        for pair in pairs:
+            price_usd = pair.get("priceUsd")
+            if price_usd is None:
+                continue
             try:
-                url = ApiConstants.DEXSCREENER_API_URL.format(token_address.lower())
-                response = requests.get(url, timeout=10)
-                
-                if response.status_code != 200:
-                    error_msg = f"Server response for token USD: {response.status_code}, body: {response.text}"
-                    logging.error(error_msg)
-                    raise Exception(f"HTTP error dla tokena USD: {response.status_code}")
-                
-                data = response.json()
-                pairs = data.get("pairs", [])
-                
-                for pair in pairs:
-                    price_usd = pair.get("priceUsd")
-                    if price_usd is not None:
-                        usd_rate = float(price_usd)
-                        break
-                
-                if usd_rate is not None:
-                    logging.info(f"Pobrano kurs USD dla tokena {token_address}: {usd_rate}")
-                    return usd_rate
-                else:
-                    error_msg = f"Nie znaleziono ceny USD dla tokena {token_address}"
-                    logging.error(error_msg)
-                    raise Exception("Brak ceny USD w danych API")
-                    
-            except Exception as e:
-                logging.error(f"Attempt {attempt + 1} to fetch the USD rate failed: {e}")
-                attempt += 1
-                if attempt < retries:
-                    time.sleep(self.delay_between_requests * attempt)
-        
-        logging.error(f"Failed to fetch the USD rate for token {token_address} after {retries} attempts")
+                return float(price_usd)
+            except ValueError as e:
+                logging.error(f"Error parsing USD rate for token {token_address}: {e}")
+
+        logging.error(f"No USD price found for token {token_address}")
         return "error"
-    
-    def get_native_to_usd_rate(self, retries: Optional[int] = None) -> Union[float, str]:
-        if retries is None:
-            retries = 3
-            
-        attempt = 0
-        rate = None
-        
-        while attempt < retries:
-            try:
-                url = f"https://api.coingecko.com/api/v3/simple/price?ids={self.native_token_full_name}&vs_currencies=usd"
-                response = requests.get(url, timeout=10)
-                
-                if response.status_code == 429:
-                    logging.warning("CoinGecko rate limit exceeded. Waiting before the next attempt...")
-                    time.sleep(10)
-                    attempt += 1
-                    continue
-                
-                if response.status_code != 200:
-                    error_msg = f"Server response for native token: {response.status_code}, body: {response.text}"
-                    logging.error(error_msg)
-                    raise Exception(f"HTTP error dla natywnego tokena: {response.status_code}")
-                
-                data = response.json()
-                rate = data.get(self.native_token_full_name, {}).get("usd")
-                
-                if rate is not None:
-                    logging.info(f"Pobrano kurs wymiany {self.native_token_name} -> USD: {rate}")
-                    return float(rate)
-                else:
-                    error_msg = f"Nie znaleziono kursu wymiany dla natywnego tokena {self.native_token_full_name}"
-                    logging.error(error_msg)
-                    raise Exception("Brak kursu wymiany w danych API")
-                    
-            except Exception as e:
-                logging.error(f"Attempt {attempt + 1} to fetch the native token USD rate failed: {e}")
-                attempt += 1
-                if attempt < retries:
-                    time.sleep(self.delay_between_requests * attempt)
-        
-        logging.error(f"Failed to fetch the exchange rate {self.native_token_name} -> USD after {retries} attempts")
-        return "error"
-    
+
     def get_token_name(self, token_address: str, retries: Optional[int] = None) -> str:
-        
-        if retries is None:
-            retries = self.max_retries
-            
-        attempt = 0
-        token_name = None
-        
-        while attempt < retries:
-            try:
-                url = ApiConstants.DEXSCREENER_API_URL.format(token_address.lower())
-                response = requests.get(url, timeout=10)
-                
-                if response.status_code != 200:
-                    error_msg = f"Server response for token name: {response.status_code}, body: {response.text}"
-                    logging.error(error_msg)
-                    raise Exception(f"HTTP error dla nazwy tokena: {response.status_code}")
-                
-                data = response.json()
-                pairs = data.get("pairs", [])
-                
-                for pair in pairs:
-                    base_token = pair.get("baseToken", {})
-                    quote_token = pair.get("quoteToken", {})
-                    
-                    if base_token.get("address", "").lower() == token_address.lower():
-                        token_name = base_token.get("name") or base_token.get("symbol")
-                        break
-                    elif quote_token.get("address", "").lower() == token_address.lower():
-                        token_name = quote_token.get("name") or quote_token.get("symbol")
-                        break
-                
-                if token_name is not None:
-                    logging.info(f"Fetched token name {token_address}: {token_name}")
-                    return token_name
-                else:
-                    error_msg = f"Nie znaleziono nazwy dla tokena {token_address}"
-                    logging.error(error_msg)
-                    raise Exception("Brak nazwy tokena w danych API")
-                    
-            except Exception as e:
-                logging.error(f"Attempt {attempt + 1} to fetch the token name failed: {e}")
-                attempt += 1
-                if attempt < retries:
-                    time.sleep(self.delay_between_requests * attempt)
-        
-        logging.error(f"Failed to fetch the token name {token_address} after {retries} attempts")
+        pairs = self._fetch_pairs(token_address, retries)
+        if pairs is None:
+            logging.error(f"Failed to fetch the token name for token {token_address}")
+            return "error"
+
+        token_addr = token_address.lower()
+        for pair in pairs:
+            base_token = pair.get("baseToken", {})
+            quote_token = pair.get("quoteToken", {})
+
+            if base_token.get("address", "").lower() == token_addr:
+                return base_token.get("name") or base_token.get("symbol") or "error"
+            if quote_token.get("address", "").lower() == token_addr:
+                return quote_token.get("name") or quote_token.get("symbol") or "error"
+
+        logging.error(f"No token name found for token {token_address}")
         return "error"
+
+    def get_native_to_usd_rate(self) -> Union[float, str]:
+        return self.api_client.get_native_token_usd_price()

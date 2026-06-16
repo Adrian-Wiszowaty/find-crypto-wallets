@@ -59,7 +59,7 @@ def main():
         config_manager = ConfigManager()
         api_client = ApiClient(config_manager)
         blockchain_analyzer = BlockchainAnalyzer(api_client)
-        exchange_rate_service = ExchangeRateService(config_manager)
+        exchange_rate_service = ExchangeRateService(config_manager, api_client)
 
         token_name = exchange_rate_service.get_token_name(current_token_address)
         if token_name != "error":

@@ -91,42 +91,17 @@ class ApiClient:
             logging.error(f"Error fetching wallet transactions for {wallet_address}: {e}")
             return []
     
-    def get_token_price_from_dexscreener(self, token_address: str) -> Union[float, str]:
+    def get_dexscreener_pairs(self, token_address: str,
+                              retries: Optional[int] = None) -> Optional[List[Dict[str, Any]]]:
 
         url = ApiConstants.DEXSCREENER_API_URL.format(token_address.lower())
-        
-        for attempt in range(1, 6):
-            try:
-                data = self._make_request_with_retry(url, {})
-                
-                if not data:
-                    continue
-                    
-                pairs = data.get("pairs", [])
-                native_address = self.network_config["native_address"].lower()
-                
-                for pair in pairs:
-                    base_addr = pair.get("baseToken", {}).get("address", "").lower()
-                    quote_addr = pair.get("quoteToken", {}).get("address", "").lower()
-                    
-                    if native_address in (base_addr, quote_addr):
-                        if base_addr == token_address.lower():
-                            return float(pair["priceNative"])
-                        elif quote_addr == token_address.lower():
-                            return 1.0 / float(pair["priceNative"])
-                
-                logging.error(f"No native pair found for token {token_address}")
-                break
-                
-            except (ValueError, KeyError, TypeError) as e:
-                logging.error(f"Error parsing Dexscreener response (attempt {attempt}): {e}")
-            except Exception as e:
-                logging.error(f"Error fetching from Dexscreener (attempt {attempt}): {e}")
-            
-            time.sleep(self.delay_between_requests * attempt)
-        
-        return "error"
-    
+        data = self._make_request_with_retry(url, {}, retries=retries)
+
+        if data is None:
+            return None
+
+        return data.get("pairs") or []
+
     def get_native_token_usd_price(self) -> Union[float, str]:
 
         token_id = self.network_config["native_token_full_name"]
