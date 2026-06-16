@@ -30,3 +30,4 @@ testpaths = ["tests"]
 
 [tool.pyright]
 exclude = ["tests", ".venv"]
+pythonPlatform = "All"
