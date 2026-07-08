@@ -1,5 +1,7 @@
 # Find Crypto Wallets
 
+[![CI](https://github.com/Adrian-Wiszowaty/find-crypto-wallets/actions/workflows/ci.yml/badge.svg)](https://github.com/Adrian-Wiszowaty/find-crypto-wallets/actions/workflows/ci.yml)
+
 Narzędzie z interfejsem graficznym, które wyszukuje portfele early-buyerów danego tokena ERC-20.
 Podajesz adres kontraktu i trzy punkty w czasie, a aplikacja pobiera transakcje on-chain,
 odfiltrowuje boty, wybiera portfele które kupiły wcześnie i utrzymały tokeny, po czym wycenia
