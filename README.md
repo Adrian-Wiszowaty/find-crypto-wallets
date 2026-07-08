@@ -100,12 +100,12 @@ w stałych. Daty podajesz w formacie `DD-MM-YYYY HH:MM:SS` (czas lokalny Europe/
 
 | Parametr | Gdzie | Opis |
 |---|---|---|
-| `ETHERSCAN_API_KEY` | `.env` | Klucz API Etherscan (wymagany) |
-| `NETWORK` | GUI | Sieć: `ETH`, `BSC` lub `BASE` (domyślnie `ETH`) |
-| `T1`, `T2`, `T3` | GUI | Początek zakupów, koniec zakupów, dzień weryfikacji |
-| `TOKEN_CONTRACT_ADDRESS` | GUI | Adres kontraktu analizowanego tokena |
+| `ETHERSCAN_API_KEY`    | `.env`            | Klucz API Etherscan (wymagany)                                          |
+| `NETWORK`              | GUI               | Sieć: `ETH`, `BSC` lub `BASE` (domyślnie `ETH`)                        |
+| `T1`, `T2`, `T3`       | GUI               | Początek zakupów, koniec zakupów, dzień weryfikacji                     |
+| `TOKEN_CONTRACT_ADDRESS` | GUI             | Adres kontraktu analizowanego tokena                                    |
 | `MIN_BALANCE_PERCENTAGE` | `api_constants.py` | Minimalny % zakupu, jaki portfel musi utrzymać do T3 (domyślnie 50) |
-| `MIN_USD_VALUE` | `api_constants.py` | Minimalna wartość salda w USD, by portfel trafił do raportu (domyślnie 100) |
+| `MIN_USD_VALUE`        | `api_constants.py` | Minimalna wartość salda w USD, by portfel trafił do raportu (domyślnie 100) |
 
 Pozostałe progi (częstotliwość transakcji, rozmiar porcji bloków, limity ponawiania) znajdziesz
 w `shared/constants/api_constants.py`.
