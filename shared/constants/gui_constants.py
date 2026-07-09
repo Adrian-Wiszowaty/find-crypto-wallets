@@ -1,15 +1,20 @@
 class GuiConstants:
-    
+
     GUI_PADDING_X = 5
     GUI_PADDING_Y = 5
     GUI_MIN_WIDTH = 600
     GUI_MIN_HEIGHT = 400
     GUI_LOG_HEIGHT = 15
     GUI_LOG_WIDTH = 70
-    
+
     GUI_LOG_BG_COLOR = "black"
     GUI_LOG_FG_COLOR = "white"
     GUI_LOG_INSERT_BG_COLOR = "white"
-    
+
+    GUI_CORNER_RADIUS = 8
+    GUI_BUTTON_PADDING = (13, 8)
+    GUI_BUTTON_HOVER_SHADE = 0.88
+    GUI_BUTTON_PRESSED_SHADE = 0.78
+
     APP_TITLE = "Find Wallets"
     GUI_THEME = "flatly"

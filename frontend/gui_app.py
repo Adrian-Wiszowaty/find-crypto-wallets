@@ -11,6 +11,7 @@ from backend.config_manager import ConfigManager
 from shared.datetime_helper import DateTimeHelper
 from shared.error_handler import ErrorHandler
 from .gui_helpers import GUIHelpers
+from .rounded_style import RoundedStyle
 from .log_redirector import LogRedirector
 from backend.wallet_processor import main
 from shared.constants.config_constants import ConfigConstants
@@ -18,154 +19,155 @@ from shared.constants.file_constants import FileConstants
 from shared.constants.gui_constants import GuiConstants
 
 class WalletApp:
-    
+
     def __init__(self):
 
         self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.config_file = os.path.join(self.base_dir, FileConstants.FOLDER_CONFIG, FileConstants.FILE_CONFIG)
-        
+
         self._setup_main_window()
         self._setup_gui_components()
         self._load_config()
-    
+
     def _setup_main_window(self):
-        
+
         self.root = ttk.Window(title=GuiConstants.APP_TITLE, themename=GuiConstants.GUI_THEME)
-        
+
         icon_path = os.path.join(self.base_dir, FileConstants.FOLDER_IMAGES, FileConstants.FILE_APP_ICON)
         GUIHelpers.setup_icon(self.root, icon_path)
-        
+
         self.root.minsize(GuiConstants.GUI_MIN_WIDTH, GuiConstants.GUI_MIN_HEIGHT)
         self.root.grid_columnconfigure(0, weight=1, uniform="equal")
-        
+
         GUIHelpers.configure_ttk_style()
-    
+        RoundedStyle.configure_ttk_style()
+
     def _setup_gui_components(self):
-        
+
         self._create_log_section()
         self._create_network_section()
         self._create_token_section()
         self._create_datetime_sections()
         self._create_control_buttons()
-        
+
     def _create_log_section(self):
-        
+
         self.log_widget = Text(self.root, height=GuiConstants.GUI_LOG_HEIGHT, width=GuiConstants.GUI_LOG_WIDTH)
-        self.log_widget.grid(row=0, column=0, padx=GuiConstants.GUI_PADDING_X, pady=5, 
+        self.log_widget.grid(row=0, column=0, padx=GuiConstants.GUI_PADDING_X, pady=5,
                            columnspan=2, sticky="ew")
         self.log_widget.config(bg=GuiConstants.GUI_LOG_BG_COLOR, fg=GuiConstants.GUI_LOG_FG_COLOR,
                              insertbackground=GuiConstants.GUI_LOG_INSERT_BG_COLOR)
-        
+
         sys.stdout = LogRedirector(self.log_widget)
-    
+
     def _create_network_section(self):
-        
+
         frame_network = ttk.Labelframe(self.root, text="Sieć blockchain")
-        frame_network.grid(row=1, column=0, padx=GuiConstants.GUI_PADDING_X, 
+        frame_network.grid(row=1, column=0, padx=GuiConstants.GUI_PADDING_X,
                          pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         frame_network.grid_columnconfigure(1, weight=1)
-        
+
         ttk.Label(frame_network, text="Wybierz sieć:").grid(
-            row=0, column=0, padx=GuiConstants.GUI_PADDING_X, 
+            row=0, column=0, padx=GuiConstants.GUI_PADDING_X,
             pady=GuiConstants.GUI_PADDING_Y, sticky="w")
-        
+
         self.network_var = tk.StringVar(value=ConfigConstants.DEFAULT_CONFIG["NETWORK"])
         network_combo = ttk.Combobox(frame_network, textvariable=self.network_var,
                                    values=ConfigManager.get_supported_networks(),
                                    state="readonly", style="info.TCombobox")
         network_combo.grid(row=0, column=1, padx=GuiConstants.GUI_PADDING_X,
                          pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
-    
+
     def _create_token_section(self):
-        
+
         frame_contract = ttk.Labelframe(self.root, text="Token")
         frame_contract.grid(row=2, column=0, padx=GuiConstants.GUI_PADDING_X,
                           pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         frame_contract.grid_columnconfigure(1, weight=1)
-        
+
         ttk.Label(frame_contract, text="Adres kontraktu:").grid(
             row=0, column=0, padx=GuiConstants.GUI_PADDING_X,
             pady=GuiConstants.GUI_PADDING_Y, sticky="w")
-        
+
         self.token_contract_entry = ttk.Entry(frame_contract, width=40)
         self.token_contract_entry.grid(row=0, column=1, padx=GuiConstants.GUI_PADDING_X,
                                      pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
-        
+
         self.token_contract_entry.insert(0, ConfigConstants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
-    
+
     def _create_datetime_sections(self):
-        
+
         frame_t1 = ttk.Labelframe(self.root, text="Data początkowa - T1")
         frame_t1.grid(row=3, column=0, padx=GuiConstants.GUI_PADDING_X,
                      pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
-        
+
         self.T1_widgets = GUIHelpers.create_datetime_section(
-            frame_t1, "Wybierz T1:", row=0, 
+            frame_t1, "Wybierz T1:", row=0,
             padx=GuiConstants.GUI_PADDING_X, pady=GuiConstants.GUI_PADDING_Y)
-        
+
         copy_t1_button = ttk.Button(frame_t1, text="Kopiuj do T2 i T3", width=17,
-                                   command=self._copy_t1_to_all)
+                                   command=self._copy_t1_to_all, style="Rounded.TButton")
         copy_t1_button.grid(row=0, column=2, padx=GuiConstants.GUI_PADDING_X,
                            pady=GuiConstants.GUI_PADDING_Y, sticky="ew", columnspan=2)
-        
+
         frame_t2 = ttk.Labelframe(self.root, text="Data końca zakupów - T2")
         frame_t2.grid(row=4, column=0, padx=GuiConstants.GUI_PADDING_X,
                      pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
-        
+
         self.T2_widgets = GUIHelpers.create_datetime_section(
             frame_t2, "Wybierz T2:", row=0,
             padx=GuiConstants.GUI_PADDING_X, pady=GuiConstants.GUI_PADDING_Y)
-        
+
         copy_t1_t2_button = ttk.Button(frame_t2, text="Kopiuj T1", width=17,
-                                      command=self._copy_t1_to_t2)
+                                      command=self._copy_t1_to_t2, style="Rounded.TButton")
         copy_t1_t2_button.grid(row=0, column=2, padx=GuiConstants.GUI_PADDING_X,
                               pady=GuiConstants.GUI_PADDING_Y, columnspan=2, sticky="ew")
-        
+
         frame_t3 = ttk.Labelframe(self.root, text="Data końca analizy - T3")
         frame_t3.grid(row=5, column=0, padx=GuiConstants.GUI_PADDING_X,
                      pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
-        
+
         self.T3_widgets = GUIHelpers.create_datetime_section(
             frame_t3, "Wybierz T3:", row=0,
             padx=GuiConstants.GUI_PADDING_X, pady=GuiConstants.GUI_PADDING_Y)
-        
+
         copy_t2_t3_button = ttk.Button(frame_t3, text="Kopiuj T2", width=17,
-                                      command=self._copy_t2_to_t3)
+                                      command=self._copy_t2_to_t3, style="Rounded.TButton")
         copy_t2_t3_button.grid(row=0, column=2, padx=GuiConstants.GUI_PADDING_X,
                               pady=GuiConstants.GUI_PADDING_Y, columnspan=2, sticky="ew")
-    
+
     def _create_control_buttons(self):
-        
+
         frame_buttons = ttk.Frame(self.root)
         frame_buttons.grid(row=6, column=0, padx=GuiConstants.GUI_PADDING_X,
                          pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
         frame_buttons.grid_columnconfigure((0, 1), weight=1)
-        
+
         self.run_button = ttk.Button(frame_buttons, text="URUCHOM ANALIZĘ",
-                                   command=self._save_and_run, bootstyle="success")
+                                   command=self._save_and_run, style="RoundedRun.TButton")
         self.run_button.grid(row=0, column=0, padx=GuiConstants.GUI_PADDING_X,
                            pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
-        
+
         close_button = ttk.Button(frame_buttons, text="ZAMKNIJ",
-                                command=self.root.quit, bootstyle="danger")
+                                command=self.root.quit, style="RoundedClose.TButton")
         close_button.grid(row=0, column=1, padx=GuiConstants.GUI_PADDING_X,
                          pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
-    
+
     def _copy_t1_to_all(self):
-        
+
         GUIHelpers.copy_datetime_values(self.T1_widgets, self.T2_widgets)
         GUIHelpers.copy_datetime_values(self.T1_widgets, self.T3_widgets)
-    
+
     def _copy_t1_to_t2(self):
-        
+
         GUIHelpers.copy_datetime_values(self.T1_widgets, self.T2_widgets)
-    
+
     def _copy_t2_to_t3(self):
-        
+
         GUIHelpers.copy_datetime_values(self.T2_widgets, self.T3_widgets)
-    
+
     def _save_and_run(self):
-        
+
         self.run_button.config(state="disabled")
         started = False
 
@@ -173,37 +175,37 @@ class WalletApp:
 
             network = self.network_var.get()
             T1_str = GUIHelpers.get_datetime_string(self.T1_widgets)
-            T2_str = GUIHelpers.get_datetime_string(self.T2_widgets) 
+            T2_str = GUIHelpers.get_datetime_string(self.T2_widgets)
             T3_str = GUIHelpers.get_datetime_string(self.T3_widgets)
             token_contract = self.token_contract_entry.get().strip()
-            
+
             if not token_contract:
                 messagebox.showerror("Błąd", "Adres kontraktu nie może być pusty!")
                 return
-            
+
             try:
                 DateTimeHelper.validate_date_range(T1_str, T2_str, T3_str)
             except ValueError as e:
-                messagebox.showerror("Błąd walidacji dat", 
+                messagebox.showerror("Błąd walidacji dat",
                                    f"Niepoprawne ustawienie dat:\n{str(e)}\n\n"
                                    "Upewnij się, że T1 ≤ T2 ≤ T3")
                 return
             except Exception as e:
                 messagebox.showerror("Błąd", f"Błąd podczas walidacji dat: {str(e)}")
                 return
-            
+
             config = {
                 "NETWORK": network,
                 "T1_STR": T1_str,
-                "T2_STR": T2_str, 
+                "T2_STR": T2_str,
                 "T3_STR": T3_str,
                 "TOKEN_CONTRACT_ADDRESS": token_contract
             }
-            
+
             if ErrorHandler.safe_json_save(config, self.config_file):
                 self.log_widget.insert(tk.END, "Konfiguracja zapisana\n")
                 self.log_widget.yview(tk.END)
-                
+
                 threading.Thread(target=self._run_analysis, daemon=True).start()
                 started = True
             else:
@@ -216,9 +218,9 @@ class WalletApp:
         finally:
             if not started:
                 self.run_button.config(state="normal")
-    
+
     def _run_analysis(self):
-        
+
         try:
             main()
             self._show_success_message()
@@ -236,9 +238,9 @@ class WalletApp:
 
         self._play_sound(success=False)
         self.root.after(0, lambda: messagebox.showerror("Błąd", f"Wystąpił błąd: {error_msg}"))
-    
+
     def _play_sound(self, success: bool = True):
-        
+
         def play_async():
             try:
                 if os.name == 'nt':
@@ -246,55 +248,55 @@ class WalletApp:
                     freq, dur = (1000, 500) if success else (200, 500)
                     winsound.Beep(freq, dur)
                 else:
-                    sound_file = ("/System/Library/Sounds/Pop.aiff" if success 
+                    sound_file = ("/System/Library/Sounds/Pop.aiff" if success
                                 else "/System/Library/Sounds/Basso.aiff")
                     os.system(f"afplay {sound_file}")
             except Exception:
                 pass
-        
+
         threading.Thread(target=play_async, daemon=True).start()
-    
+
     def _load_config(self):
-        
+
         config = ErrorHandler.safe_json_load(self.config_file, ConfigConstants.DEFAULT_CONFIG)
-        
+
         self.network_var.set(config.get("NETWORK", ConfigConstants.DEFAULT_CONFIG["NETWORK"]))
-        
+
         token_address = config.get("TOKEN_CONTRACT_ADDRESS", ConfigConstants.DEFAULT_CONFIG["TOKEN_CONTRACT_ADDRESS"])
         self.token_contract_entry.delete(0, tk.END)
         self.token_contract_entry.insert(0, token_address)
-        
+
         self._load_datetime_config("T1_STR", self.T1_widgets, config)
         self._load_datetime_config("T2_STR", self.T2_widgets, config)
         self._load_datetime_config("T3_STR", self.T3_widgets, config)
-    
+
     def _load_datetime_config(self, config_key: str, widgets: tuple, config: dict):
-        
+
         try:
             date_str = config.get(config_key, ConfigConstants.DEFAULT_CONFIG[config_key])
             date_obj = datetime.strptime(date_str, ConfigConstants.DATE_FORMAT)
-            
+
             date_entry, hour_combo, minute_combo, second_combo = widgets
-            
+
             date_entry.entry.delete(0, tk.END)
             date_entry.entry.insert(0, date_obj.strftime("%Y-%m-%d"))
-            
+
             hour_combo.set(f"{date_obj.hour:02d}")
             minute_combo.set(f"{date_obj.minute:02d}")
             second_combo.set(f"{date_obj.second:02d}")
-            
+
         except Exception as e:
             print(f"Error loading configuration {config_key}: {e}")
-    
+
     def run(self):
-        
+
         try:
             self.root.mainloop()
         except Exception as e:
             print(f"Application error: {e}")
 
 def main_app():
-    
+
     try:
         app = WalletApp()
         app.run()
