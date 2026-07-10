@@ -3,7 +3,7 @@ import threading
 import sys
 import tkinter as tk
 from datetime import datetime
-from tkinter import Text, messagebox
+from tkinter import messagebox
 
 import ttkbootstrap as ttk
 
@@ -39,7 +39,6 @@ class WalletApp:
         self.root.minsize(GuiConstants.GUI_MIN_WIDTH, GuiConstants.GUI_MIN_HEIGHT)
         self.root.grid_columnconfigure(0, weight=1, uniform="equal")
 
-        GUIHelpers.configure_ttk_style()
         RoundedStyle.configure_ttk_style()
 
     def _setup_gui_components(self):
@@ -52,9 +51,11 @@ class WalletApp:
 
     def _create_log_section(self):
 
-        self.log_widget = Text(self.root, height=GuiConstants.GUI_LOG_HEIGHT, width=GuiConstants.GUI_LOG_WIDTH)
-        self.log_widget.grid(row=0, column=0, padx=GuiConstants.GUI_PADDING_X, pady=5,
-                           columnspan=2, sticky="ew")
+        log_panel, self.log_widget = RoundedStyle.create_rounded_panel(
+            self.root, GuiConstants.GUI_LOG_BG_COLOR,
+            height=GuiConstants.GUI_LOG_HEIGHT, width=GuiConstants.GUI_LOG_WIDTH)
+        log_panel.grid(row=0, column=0, padx=GuiConstants.GUI_PADDING_X, pady=5,
+                     columnspan=2, sticky="ew")
         self.log_widget.config(bg=GuiConstants.GUI_LOG_BG_COLOR, fg=GuiConstants.GUI_LOG_FG_COLOR,
                              insertbackground=GuiConstants.GUI_LOG_INSERT_BG_COLOR)
 
@@ -74,7 +75,7 @@ class WalletApp:
         self.network_var = tk.StringVar(value=ConfigConstants.DEFAULT_CONFIG["NETWORK"])
         network_combo = ttk.Combobox(frame_network, textvariable=self.network_var,
                                    values=ConfigManager.get_supported_networks(),
-                                   state="readonly", style="info.TCombobox")
+                                   state="readonly", style="Rounded.TCombobox")
         network_combo.grid(row=0, column=1, padx=GuiConstants.GUI_PADDING_X,
                          pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
 
@@ -89,7 +90,7 @@ class WalletApp:
             row=0, column=0, padx=GuiConstants.GUI_PADDING_X,
             pady=GuiConstants.GUI_PADDING_Y, sticky="w")
 
-        self.token_contract_entry = ttk.Entry(frame_contract, width=40)
+        self.token_contract_entry = ttk.Entry(frame_contract, width=40, style="Rounded.TEntry")
         self.token_contract_entry.grid(row=0, column=1, padx=GuiConstants.GUI_PADDING_X,
                                      pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
 
