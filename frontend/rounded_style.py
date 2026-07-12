@@ -75,7 +75,28 @@ class RoundedStyle:
         style.map(style_name, foreground=[("disabled", colors.secondary)])
 
     @staticmethod
-    def _date_button_image(fill: str, background: str,
+    def _draw_calendar_glyph(draw: Any, box: Tuple[float, float, float, float], color: str) -> None:
+
+        x0, y0, x1, y1 = box
+        sx, sy = (x1 - x0) / 210, (y1 - y0) / 220
+
+        def px(v: float) -> float: return x0 + v * sx
+        def py(v: float) -> float: return y0 + v * sy
+
+        draw.rounded_rectangle(
+            [px(10), py(30), px(200), py(210)],
+            radius=20 * min(sx, sy), outline=color, width=max(1, round(10 * min(sx, sy))))
+
+        dots = [
+            [40, 10, 50, 50], [100, 10, 110, 50], [160, 10, 170, 50],
+            [70, 90, 90, 110], [110, 90, 130, 110], [150, 90, 170, 110],
+            [30, 130, 50, 150], [70, 130, 90, 150], [110, 130, 130, 150], [150, 130, 170, 150],
+            [30, 170, 50, 190], [70, 170, 90, 190], [110, 170, 130, 190]]
+        for a, b, c, d in dots:
+            draw.rectangle([px(a), py(b), px(c), py(d)], fill=color)
+
+    @staticmethod
+    def _date_button_image(fill: str, background: str, icon_color: str,
                          corners: Tuple[bool, bool, bool, bool]) -> Any:
 
         scale = 4
@@ -84,8 +105,13 @@ class RoundedStyle:
         side_w, side_h = w * scale, h * scale
 
         image = Image.new("RGB", (side_w, side_h), background)
-        ImageDraw.Draw(image).rounded_rectangle((0, 0, side_w - 1, side_h - 1), radius=radius * scale,
-                                              fill=fill, corners=corners)
+        draw = ImageDraw.Draw(image)
+        draw.rounded_rectangle((0, 0, side_w - 1, side_h - 1), radius=radius * scale,
+                             fill=fill, corners=corners)
+
+        margin_x, margin_y = side_w * 0.27, side_h * 0.25
+        RoundedStyle._draw_calendar_glyph(
+            draw, (margin_x, margin_y, side_w - margin_x, side_h - margin_y), icon_color)
 
         photo = ImageTk.PhotoImage(image.resize((w, h), Image.Resampling.LANCZOS))
         RoundedStyle._image_cache.append(photo)
@@ -98,14 +124,15 @@ class RoundedStyle:
         style = ttk.Style()
         colors: Any = style.colors
         base = colors.get(color_name)
+        icon_color = colors.selectfg
         background = colors.bg
 
-        normal = RoundedStyle._date_button_image(base, background, corners)
+        normal = RoundedStyle._date_button_image(base, background, icon_color, corners)
         hover = RoundedStyle._date_button_image(
-            RoundedStyle._shade_color(base, GuiConstants.GUI_BUTTON_HOVER_SHADE), background, corners)
+            RoundedStyle._shade_color(base, GuiConstants.GUI_BUTTON_HOVER_SHADE), background, icon_color, corners)
         pressed = RoundedStyle._date_button_image(
-            RoundedStyle._shade_color(base, GuiConstants.GUI_BUTTON_PRESSED_SHADE), background, corners)
-        disabled = RoundedStyle._date_button_image(colors.get("light"), background, corners)
+            RoundedStyle._shade_color(base, GuiConstants.GUI_BUTTON_PRESSED_SHADE), background, icon_color, corners)
+        disabled = RoundedStyle._date_button_image(colors.get("light"), background, colors.secondary, corners)
 
         element = f"{style_name}.background"
         style.element_create(element, "image", normal,
@@ -115,6 +142,25 @@ class RoundedStyle:
                            border=0, padding=0, sticky="")
         style.layout(style_name, [(element, {"sticky": "nsew"})])
         style.configure(style_name, borderwidth=0, focuscolor="", padding=0)
+
+    @staticmethod
+    def _arrow_image(color: str) -> Any:
+
+        scale = 4
+        w, h = GuiConstants.GUI_ARROW_SIZE
+        side_w, side_h = w * scale, h * scale
+
+        image = Image.new("RGBA", (side_w, side_h), (0, 0, 0, 0))
+        cx, cy = side_w / 2, side_h / 2
+        tri_w, tri_h = side_w * 0.5, side_h * 0.3
+        ImageDraw.Draw(image).polygon([
+            (cx - tri_w / 2, cy - tri_h / 2),
+            (cx + tri_w / 2, cy - tri_h / 2),
+            (cx, cy + tri_h / 2)], fill=color)
+
+        photo = ImageTk.PhotoImage(image.resize((w, h), Image.Resampling.LANCZOS))
+        RoundedStyle._image_cache.append(photo)
+        return photo
 
     @staticmethod
     def create_rounded_field_style(style_name: str, widget_class: str, outline_color: str,
@@ -139,7 +185,9 @@ class RoundedStyle:
         inner: List[Any] = [(f"{widget_class}.padding", {"sticky": "nswe", "children": [
             (f"{widget_class}.textarea", {"sticky": "nswe"})]})]
         if widget_class == "Combobox":
-            inner.insert(0, ("Combobox.downarrow", {"side": "right", "sticky": "ns"}))
+            arrow_element = f"{style_name}.downarrow"
+            style.element_create(arrow_element, "image", RoundedStyle._arrow_image(colors.info), sticky="")
+            inner.insert(0, (arrow_element, {"side": "right", "sticky": "ns"}))
 
         layout: Any = [(element, {"sticky": "nswe", "children": inner})]
         style.layout(style_name, layout)
