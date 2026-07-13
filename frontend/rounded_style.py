@@ -8,6 +8,7 @@ from shared.constants.gui_constants import GuiConstants
 class RoundedStyle:
 
     _image_cache: List[Any] = []
+    _date_picker_patched = False
 
     @staticmethod
     def _shade_color(color: str, factor: float) -> str:
@@ -258,9 +259,33 @@ class RoundedStyle:
         return container, text
 
     @staticmethod
+    def patch_date_picker_positioning() -> None:
+
+        if RoundedStyle._date_picker_patched:
+            return
+        RoundedStyle._date_picker_patched = True
+
+        from ttkbootstrap.dialogs.datepicker import DatePickerDialog
+
+        original_setup_calendar = DatePickerDialog._setup_calendar
+
+        def patched_setup_calendar(self: Any) -> None:
+            real_deiconify = self.root.deiconify
+            self.root.deiconify = lambda: None
+            try:
+                original_setup_calendar(self)
+            finally:
+                self.root.deiconify = real_deiconify
+            self.root.deiconify()
+
+        DatePickerDialog._setup_calendar = patched_setup_calendar
+
+    @staticmethod
     def configure_ttk_style() -> None:
 
         colors: Any = ttk.Style().colors
+
+        RoundedStyle.patch_date_picker_positioning()
 
         RoundedStyle.create_rounded_button_style("Rounded.TButton", "primary")
         RoundedStyle.create_rounded_button_style("RoundedRun.TButton", "success")
