@@ -165,16 +165,19 @@ class RoundedStyle:
 
     @staticmethod
     def create_rounded_field_style(style_name: str, widget_class: str, outline_color: str,
-                                 corners: Tuple[bool, bool, bool, bool] = (True, True, True, True)) -> None:
+                                 corners: Tuple[bool, bool, bool, bool] = (True, True, True, True),
+                                 focus_color: Optional[str] = None,
+                                 arrow_color: Optional[str] = None) -> None:
 
         style = ttk.Style()
         colors: Any = style.colors
         radius = GuiConstants.GUI_CORNER_RADIUS
         background = colors.bg
         fill = GuiConstants.GUI_FIELD_BG_COLOR
+        focus_color = focus_color or colors.info
 
         normal = RoundedStyle._rounded_image(fill, background, radius, outline_color, corners)
-        focused = RoundedStyle._rounded_image(fill, background, radius, colors.info, corners)
+        focused = RoundedStyle._rounded_image(fill, background, radius, focus_color, corners)
         disabled = RoundedStyle._rounded_image(colors.get("light"), background, radius, outline_color, corners)
 
         element = f"{style_name}.field"
@@ -186,8 +189,9 @@ class RoundedStyle:
         inner: List[Any] = [(f"{widget_class}.padding", {"sticky": "nswe", "children": [
             (f"{widget_class}.textarea", {"sticky": "nswe"})]})]
         if widget_class == "Combobox":
+            arrow_fill = arrow_color or colors.info
             arrow_element = f"{style_name}.downarrow"
-            style.element_create(arrow_element, "image", RoundedStyle._arrow_image(colors.info), sticky="")
+            style.element_create(arrow_element, "image", RoundedStyle._arrow_image(arrow_fill), sticky="")
             inner.insert(0, (arrow_element, {"side": "right", "sticky": "ns"}))
 
         layout: Any = [(element, {"sticky": "nswe", "children": inner})]
@@ -195,11 +199,11 @@ class RoundedStyle:
         style.configure(style_name,
                        borderwidth=0,
                        padding=GuiConstants.GUI_FIELD_PADDING,
-                       arrowcolor=colors.info,
+                       arrowcolor=arrow_color or colors.info,
                        foreground=colors.fg,
                        fieldbackground=fill,
                        background=background,
-                       selectbackground=colors.info,
+                       selectbackground=focus_color,
                        selectforeground=colors.selectfg)
         style.map(style_name, fieldbackground=[("readonly", fill)])
 
@@ -294,6 +298,7 @@ class RoundedStyle:
                                                     corners=(False, True, True, False))
 
         RoundedStyle.create_rounded_field_style("Rounded.TEntry", "Entry", colors.get("border"))
-        RoundedStyle.create_rounded_field_style("Rounded.TCombobox", "Combobox", colors.info)
+        RoundedStyle.create_rounded_field_style("Rounded.TCombobox", "Combobox", colors.get("border"),
+                                              focus_color=colors.secondary, arrow_color=colors.secondary)
         RoundedStyle.create_rounded_field_style("RoundedDate.TEntry", "Entry", colors.info,
                                               corners=(True, False, False, True))
