@@ -5,6 +5,8 @@ from ttkbootstrap.widgets import DateEntry
 from datetime import datetime
 from typing import Tuple, List, Optional
 
+from .rounded_style import RoundedStyle
+
 class GUIHelpers:
 
     @staticmethod
@@ -12,6 +14,7 @@ class GUIHelpers:
 
         combo = ttk.Combobox(parent, values=values, width=3, state="readonly", style="Rounded.TCombobox")
         combo.current(0)
+        RoundedStyle.style_combobox_popdown(combo, "Rounded.Vertical.TScrollbar")
         return combo
 
     @staticmethod

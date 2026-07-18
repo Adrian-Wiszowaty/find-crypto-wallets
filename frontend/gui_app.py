@@ -78,6 +78,7 @@ class WalletApp:
                                    state="readonly", style="Rounded.TCombobox")
         network_combo.grid(row=0, column=1, padx=GuiConstants.GUI_PADDING_X,
                          pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
+        RoundedStyle.style_combobox_popdown(network_combo, "Rounded.Vertical.TScrollbar")
 
     def _create_token_section(self):
 

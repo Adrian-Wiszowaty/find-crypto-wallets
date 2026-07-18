@@ -285,6 +285,48 @@ class RoundedStyle:
         DatePickerDialog._setup_calendar = patched_setup_calendar
 
     @staticmethod
+    def create_rounded_scrollbar_style(style_name: str) -> None:
+
+        style = ttk.Style()
+        colors: Any = style.colors
+        radius = GuiConstants.GUI_SCROLLBAR_RADIUS
+        trough = colors.get("light")
+
+        normal = RoundedStyle._rounded_image(colors.secondary, trough, radius)
+        active = RoundedStyle._rounded_image(
+            RoundedStyle._shade_color(colors.secondary, GuiConstants.GUI_BUTTON_PRESSED_SHADE), trough, radius)
+
+        thumb = f"{style_name}.thumb"
+        style.element_create(thumb, "image", normal,
+                           ("pressed", active), ("active", active),
+                           border=radius, padding=0, sticky="nswe")
+
+        layout: Any = [("Vertical.Scrollbar.trough", {"sticky": "ns", "children": [
+            (thumb, {"sticky": "nswe", "expand": True})]})]
+        style.layout(style_name, layout)
+        style.configure(style_name, troughcolor=trough, borderwidth=0,
+                       arrowsize=0, gripcount=0, width=GuiConstants.GUI_SCROLLBAR_WIDTH)
+
+    @staticmethod
+    def style_combobox_popdown(combobox: ttk.Combobox, scrollbar_style: str) -> None:
+
+        colors: Any = ttk.Style().colors
+        fill = GuiConstants.GUI_FIELD_BG_COLOR
+
+        popdown = combobox.tk.eval(f"ttk::combobox::PopdownWindow {combobox}")
+        combobox.tk.call(f"{popdown}.f.l", "configure",
+                       "-background", fill,
+                       "-foreground", colors.fg,
+                       "-selectbackground", colors.secondary,
+                       "-selectforeground", colors.selectfg,
+                       "-borderwidth", 0,
+                       "-highlightthickness", 1,
+                       "-highlightbackground", colors.get("border"),
+                       "-highlightcolor", colors.secondary,
+                       "-relief", "flat")
+        combobox.tk.call(f"{popdown}.f.sb", "configure", "-style", scrollbar_style)
+
+    @staticmethod
     def configure_ttk_style() -> None:
 
         colors: Any = ttk.Style().colors
@@ -302,3 +344,5 @@ class RoundedStyle:
                                               focus_color=colors.secondary, arrow_color=colors.secondary)
         RoundedStyle.create_rounded_field_style("RoundedDate.TEntry", "Entry", colors.info,
                                               corners=(True, False, False, True))
+
+        RoundedStyle.create_rounded_scrollbar_style("Rounded.Vertical.TScrollbar")
