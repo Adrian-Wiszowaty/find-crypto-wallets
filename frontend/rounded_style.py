@@ -37,13 +37,13 @@ class RoundedStyle:
         return photo
 
     @staticmethod
-    def create_rounded_button_style(style_name: str, color_name: str,
+    def create_rounded_button_style(style_name: str, color: str,
                                   corners: Tuple[bool, bool, bool, bool] = (True, True, True, True),
                                   padding: Any = GuiConstants.GUI_BUTTON_PADDING) -> None:
 
         style = ttk.Style()
         colors: Any = style.colors
-        base = colors.get(color_name)
+        base = color
         radius = GuiConstants.GUI_CORNER_RADIUS
         background = colors.bg
 
@@ -119,20 +119,19 @@ class RoundedStyle:
         return photo
 
     @staticmethod
-    def create_rounded_date_button_style(style_name: str, color_name: str,
+    def create_rounded_date_button_style(style_name: str, color: str,
                                        corners: Tuple[bool, bool, bool, bool] = (True, True, True, True)) -> None:
 
         style = ttk.Style()
         colors: Any = style.colors
-        base = colors.get(color_name)
-        icon_color = colors.selectfg
         background = colors.bg
+        icon_color = colors.selectfg
 
-        normal = RoundedStyle._date_button_image(base, background, icon_color, corners)
+        normal = RoundedStyle._date_button_image(color, background, icon_color, corners)
         hover = RoundedStyle._date_button_image(
-            RoundedStyle._shade_color(base, GuiConstants.GUI_BUTTON_HOVER_SHADE), background, icon_color, corners)
+            RoundedStyle._shade_color(color, GuiConstants.GUI_BUTTON_HOVER_SHADE), background, icon_color, corners)
         pressed = RoundedStyle._date_button_image(
-            RoundedStyle._shade_color(base, GuiConstants.GUI_BUTTON_PRESSED_SHADE), background, icon_color, corners)
+            RoundedStyle._shade_color(color, GuiConstants.GUI_BUTTON_PRESSED_SHADE), background, icon_color, corners)
         disabled = RoundedStyle._date_button_image(colors.get("light"), background, colors.secondary, corners)
 
         element = f"{style_name}.background"
@@ -333,16 +332,19 @@ class RoundedStyle:
 
         RoundedStyle.patch_date_picker_positioning()
 
-        RoundedStyle.create_rounded_button_style("Rounded.TButton", "primary")
-        RoundedStyle.create_rounded_button_style("RoundedRun.TButton", "success")
-        RoundedStyle.create_rounded_button_style("RoundedClose.TButton", "danger")
-        RoundedStyle.create_rounded_date_button_style("RoundedDate.TButton", "info",
+        RoundedStyle.create_rounded_button_style("Rounded.TButton", GuiConstants.GUI_ACCENT_COLOR)
+        RoundedStyle.create_rounded_button_style("RoundedRun.TButton", colors.get("success"))
+        RoundedStyle.create_rounded_button_style("RoundedClose.TButton", colors.get("danger"))
+        RoundedStyle.create_rounded_date_button_style("RoundedDate.TButton", GuiConstants.GUI_ACCENT_COLOR,
                                                     corners=(False, True, True, False))
 
-        RoundedStyle.create_rounded_field_style("Rounded.TEntry", "Entry", colors.get("border"))
-        RoundedStyle.create_rounded_field_style("Rounded.TCombobox", "Combobox", colors.get("border"),
-                                              focus_color=colors.secondary, arrow_color=colors.secondary)
-        RoundedStyle.create_rounded_field_style("RoundedDate.TEntry", "Entry", colors.info,
-                                              corners=(True, False, False, True))
+        RoundedStyle.create_rounded_field_style("Rounded.TEntry", "Entry", GuiConstants.GUI_ACCENT_COLOR,
+                                              focus_color=GuiConstants.GUI_ACCENT_DEEP_COLOR)
+        RoundedStyle.create_rounded_field_style("Rounded.TCombobox", "Combobox", GuiConstants.GUI_ACCENT_COLOR,
+                                              focus_color=GuiConstants.GUI_ACCENT_DEEP_COLOR,
+                                              arrow_color=GuiConstants.GUI_ACCENT_COLOR)
+        RoundedStyle.create_rounded_field_style("RoundedDate.TEntry", "Entry", GuiConstants.GUI_ACCENT_COLOR,
+                                              corners=(True, False, False, True),
+                                              focus_color=GuiConstants.GUI_ACCENT_DEEP_COLOR)
 
         RoundedStyle.create_rounded_scrollbar_style("Rounded.Vertical.TScrollbar")
