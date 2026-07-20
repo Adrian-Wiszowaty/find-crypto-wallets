@@ -1,3 +1,5 @@
+**🇵🇱 Polski** | [🇬🇧 English](README.en.md)
+
 # Find Crypto Wallets
 
 [![CI](https://github.com/Adrian-Wiszowaty/find-crypto-wallets/actions/workflows/ci.yml/badge.svg)](https://github.com/Adrian-Wiszowaty/find-crypto-wallets/actions/workflows/ci.yml)
