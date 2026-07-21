@@ -110,7 +110,8 @@ class RoundedStyle:
         draw.rounded_rectangle((0, 0, side_w - 1, side_h - 1), radius=radius * scale,
                              fill=fill, corners=corners)
 
-        margin_x, margin_y = side_w * 0.27, side_h * 0.25
+        margin_x = side_w * GuiConstants.GUI_DATE_ICON_MARGIN
+        margin_y = side_h * GuiConstants.GUI_DATE_ICON_MARGIN
         RoundedStyle._draw_calendar_glyph(
             draw, (margin_x, margin_y, side_w - margin_x, side_h - margin_y), icon_color)
 
