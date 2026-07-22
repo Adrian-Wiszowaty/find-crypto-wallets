@@ -38,6 +38,7 @@ class WalletApp:
 
         self.root.minsize(GuiConstants.GUI_MIN_WIDTH, GuiConstants.GUI_MIN_HEIGHT)
         self.root.grid_columnconfigure(0, weight=1, uniform="equal")
+        self.root.grid_rowconfigure(0, weight=1)
 
         RoundedStyle.configure_ttk_style()
 
@@ -55,7 +56,7 @@ class WalletApp:
             self.root, GuiConstants.GUI_LOG_BG_COLOR,
             height=GuiConstants.GUI_LOG_HEIGHT, width=GuiConstants.GUI_LOG_WIDTH)
         log_panel.grid(row=0, column=0, padx=GuiConstants.GUI_PADDING_X, pady=5,
-                     columnspan=2, sticky="ew")
+                     columnspan=2, sticky="nsew")
         self.log_widget.config(bg=GuiConstants.GUI_LOG_BG_COLOR, fg=GuiConstants.GUI_LOG_FG_COLOR,
                              insertbackground=GuiConstants.GUI_LOG_INSERT_BG_COLOR)
 
@@ -102,6 +103,7 @@ class WalletApp:
         frame_t1 = ttk.Labelframe(self.root, text="Data początkowa - T1")
         frame_t1.grid(row=3, column=0, padx=GuiConstants.GUI_PADDING_X,
                      pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
+        frame_t1.grid_columnconfigure(2, weight=1)
 
         self.T1_widgets = GUIHelpers.create_datetime_section(
             frame_t1, "Wybierz T1:", row=0,
@@ -115,6 +117,7 @@ class WalletApp:
         frame_t2 = ttk.Labelframe(self.root, text="Data końca zakupów - T2")
         frame_t2.grid(row=4, column=0, padx=GuiConstants.GUI_PADDING_X,
                      pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
+        frame_t2.grid_columnconfigure(2, weight=1)
 
         self.T2_widgets = GUIHelpers.create_datetime_section(
             frame_t2, "Wybierz T2:", row=0,
@@ -128,6 +131,7 @@ class WalletApp:
         frame_t3 = ttk.Labelframe(self.root, text="Data końca analizy - T3")
         frame_t3.grid(row=5, column=0, padx=GuiConstants.GUI_PADDING_X,
                      pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
+        frame_t3.grid_columnconfigure(2, weight=1)
 
         self.T3_widgets = GUIHelpers.create_datetime_section(
             frame_t3, "Wybierz T3:", row=0,
@@ -143,7 +147,8 @@ class WalletApp:
         frame_buttons = ttk.Frame(self.root)
         frame_buttons.grid(row=6, column=0, padx=GuiConstants.GUI_PADDING_X,
                          pady=GuiConstants.GUI_PADDING_Y, sticky="ew")
-        frame_buttons.grid_columnconfigure((0, 1), weight=1)
+        frame_buttons.grid_columnconfigure(0, weight=GuiConstants.GUI_RUN_BUTTON_WEIGHT)
+        frame_buttons.grid_columnconfigure(1, weight=GuiConstants.GUI_CLOSE_BUTTON_WEIGHT)
 
         self.run_button = ttk.Button(frame_buttons, text="URUCHOM ANALIZĘ",
                                    command=self._save_and_run, style="RoundedRun.TButton")

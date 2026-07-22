@@ -25,6 +25,8 @@ class GuiConstants:
     GUI_SCROLLBAR_WIDTH = 10
     GUI_BUTTON_HOVER_SHADE = 0.88
     GUI_BUTTON_PRESSED_SHADE = 0.78
+    GUI_RUN_BUTTON_WEIGHT = 6
+    GUI_CLOSE_BUTTON_WEIGHT = 5
 
     APP_TITLE = "Find Wallets"
     GUI_THEME = "flatly"
